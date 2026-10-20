@@ -5,12 +5,17 @@ import type { QuotationInput } from '../types/quotation.ts'
 import type { FareQuotation } from '../types/domain.ts'
 import type { Trip } from '../types/domain.ts'
 import type { CreateTripInput, ResourceAvailability, TripAssignmentContext, TripAssignmentDetails } from '../types/trip-assignment.ts'
+import type { CancelTripInput, CompleteTripInput, ManagedTrip, TripList } from '../types/trip-management.ts'
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string }
 export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getTrips(): Promise<ServiceResult<TripList>>
+  getTripDetails(tripId: string): Promise<ServiceResult<ManagedTrip>>
+  cancelTrip(input: CancelTripInput): Promise<ServiceResult<Trip>>
+  completeTrip(input: CompleteTripInput): Promise<ServiceResult<Trip>>
   getAvailability(): Promise<ServiceResult<ResourceAvailability>>
   getTripAssignmentContext(): Promise<ServiceResult<TripAssignmentContext>>
   getAssignedTrip(tripId: string): Promise<ServiceResult<TripAssignmentDetails>>

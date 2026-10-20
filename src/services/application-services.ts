@@ -25,6 +25,10 @@ export const subscribeApplication = (listener: () => void) => {
 }
 
 export const applicationServices: ApplicationServices = {
+  getTrips: async () => { await initialization; return adapter.services.getTrips() },
+  getTripDetails: async (id) => { await initialization; return adapter.services.getTripDetails(id) },
+  cancelTrip: async (input) => { await initialization; return adapter.services.cancelTrip(input) },
+  completeTrip: async (input) => { await initialization; return adapter.services.completeTrip(input) },
   getAvailability: async () => { await initialization; return adapter.services.getAvailability() },
   getTripAssignmentContext: async () => { await initialization; return adapter.services.getTripAssignmentContext() },
   getAssignedTrip: async (id) => { await initialization; return adapter.services.getAssignedTrip(id) },

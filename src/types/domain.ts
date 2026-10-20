@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { fareChargesSchema, totalFare } from './quotation.ts'
+import { holdsTripResources } from './trip-policy.ts'
 
 export const userRoles = ['admin', 'customer', 'coordinator', 'driver', 'mechanic'] as const
 export const webRoles = ['admin', 'customer', 'coordinator'] as const
@@ -48,6 +49,10 @@ export const fareQuotationSchema = z.object({
 export const assignmentSchema = z.object({ vehicleId: id, driverId: id, mechanicId: id })
 const tripBase = z.object({ ...record, orderId: id, assignment: assignmentSchema,
   scheduledStart: timestamp.optional(), scheduledEnd: timestamp.optional(), createdAt: timestamp.optional(), createdBy: id.optional(),
+  actualStartAt: timestamp.optional(), startingOdometer: z.number().nonnegative().optional(),
+  cancellationReason: z.string().trim().min(1).optional(), cancellationDetails: z.string().optional(),
+  cancelledAt: timestamp.optional(), cancelledBy: id.optional(), completedBy: id.optional(),
+  resourcesHeld: z.boolean().optional(), notes: z.string().optional(),
 })
 export const tripSchema = z.discriminatedUnion('status', [
   tripBase.extend({ status: z.enum(['Draft', 'Assigned', 'In Progress', 'Cancelled']) }),
@@ -100,10 +105,12 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
     if (!data.orders.some((order) => order.id === trip.orderId)) invalid('Unknown trip order')
     if (!!trip.scheduledStart !== !!trip.scheduledEnd || (trip.scheduledStart && trip.scheduledEnd && Date.parse(trip.scheduledEnd) <= Date.parse(trip.scheduledStart))) invalid('Invalid trip window')
     if (trip.createdBy && !userHasRole(trip.createdBy, 'coordinator')) invalid('Invalid trip creator')
+    if ((trip.cancelledBy && !userHasRole(trip.cancelledBy, 'coordinator')) || (trip.completedBy && !userHasRole(trip.completedBy, 'coordinator'))) invalid('Invalid trip lifecycle actor')
+    if (trip.status === 'Completed' && trip.startingOdometer !== undefined && trip.finalOdometer < trip.startingOdometer) invalid('Final odometer is below starting odometer')
     for (const [key, resources] of [['vehicleId', data.vehicles], ['driverId', data.drivers], ['mechanicId', data.mechanics]] as const) {
       const resource = resources.find((item) => item.id === trip.assignment[key])
       if (!resource) invalid('Unknown assigned resource')
-      if (['Draft', 'Assigned', 'In Progress'].includes(trip.status)) {
+      if (holdsTripResources(trip)) {
         if (occupied[key].has(trip.assignment[key]) || resource?.available) invalid('Conflicting resource assignment')
         occupied[key].add(trip.assignment[key])
       }

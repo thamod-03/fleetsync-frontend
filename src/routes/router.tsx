@@ -14,6 +14,8 @@ import { ReviewOrderPage } from '../features/coordinator/review-order-page'
 import { AvailabilityPage } from '../features/coordinator/availability-page'
 import { CreateTripPage } from '../features/coordinator/create-trip-page'
 import { TripAssignedPage } from '../features/coordinator/trip-assigned-page'
+import { TripListPage } from '../features/coordinator/trip-list-page'
+import { TripDetailsPage } from '../features/coordinator/trip-details-page'
 import { RoleGuard } from './role-guard'
 import { HomeRedirect, RouteErrorPage, SystemPage } from './system-pages'
 
@@ -41,6 +43,9 @@ export const routes: RouteObject[] = [{
       { path: 'orders/:orderId', element: <ReviewOrderPage /> },
       { path: 'availability', element: <AvailabilityPage /> },
       { path: 'trips/create', element: <CreateTripPage /> },
+      { path: 'trips', element: <TripListPage /> },
+      { path: 'trips/:tripId', element: <TripDetailsPage /> },
+      { path: 'trips/:tripId/cancel', element: <TripDetailsPage /> },
       { path: 'trips/:tripId/assigned', element: <TripAssignedPage /> },
       { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },

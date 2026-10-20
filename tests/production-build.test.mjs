@@ -15,7 +15,7 @@ test('production artifacts exclude mock authentication and utilities even with d
         assert.equal(code.includes(forbidden), false, `${environment} build contains ${forbidden}`)
       }
       const modules = chunks.flatMap((chunk) => Object.keys(chunk.modules)).map((path) => path.replaceAll('\\', '/'))
-      for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
+      for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
         assert.equal(modules.some((path) => path.includes(forbidden)), false, `${environment} build imports ${forbidden}`)
       }
       assert.ok(code.includes('This service is currently unavailable. Please try again later.'))

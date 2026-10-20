@@ -1,5 +1,4 @@
 import { Link } from 'react-router'
-import type { ReactNode } from 'react'
 import { Activity, Plus, Truck, Users, Wrench } from 'lucide-react'
 import { useDemoUser } from '../../hooks/use-demo'
 import { applicationServices } from '../../services/application-services'
@@ -10,7 +9,6 @@ import { money, orderStatus } from './coordinator-format'
 import { useCoordinatorQuery } from './use-coordinator-query'
 
 const later = 'Currently unavailable'
-function Deferred({ children }: { children: ReactNode }) { return <button type="button" className="coord-link" disabled title={later}>{children}</button> }
 
 export function CoordinatorDashboardPage() {
   const user = useDemoUser()
@@ -42,7 +40,7 @@ export function CoordinatorDashboard({ data, name }: { data: CoordinatorOverview
       <CoordinatorCard title="Orders waiting for you" subtitle="Newest first" action={<Link className="coord-link" to="/coordinator/orders">All orders</Link>}>
         {data.orders.length ? data.orders.slice(0, 4).map((item) => <div className="coord-order-row" key={item.order.id}><div><span className="coord-mono">{item.order.id}</span><small>{new Date(item.order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</small></div><div><strong>{item.company.name}</strong><small>{item.order.origin} → {item.order.destination}</small></div><StatusBadge>{orderStatus(item)}</StatusBadge><Link className={`coord-button small ${item.order.status === 'Submitted' ? '' : 'secondary'}`} to={`/coordinator/orders/${item.order.id}`}>{item.order.status === 'Submitted' ? 'Prepare quote' : 'View'}</Link></div>) : <EmptyState title="No submitted orders" description="New customer orders will appear here." />}
       </CoordinatorCard>
-      <CoordinatorCard title="Active trips" subtitle={`${progressing.length} in progress`} action={<Deferred>View trips</Deferred>}><div className="coord-card-body">{data.trips.length ? data.trips.slice(0, 4).map(({ trip, order, driver }) => <div key={trip.id} className="coord-trip"><div><Link className="coord-mono" to={`/coordinator/trips/${trip.id}/assigned`}>{trip.id}</Link><span>{order.origin} → {order.destination}</span></div><p>{trip.status} · {driver.name}</p></div>) : <p>No active trips.</p>}</div></CoordinatorCard>
+      <CoordinatorCard title="Active trips" subtitle={`${progressing.length} in progress`} action={<Link className="coord-link" to="/coordinator/trips">View trips</Link>}><div className="coord-card-body">{data.trips.length ? data.trips.slice(0, 4).map(({ trip, order, driver }) => <div key={trip.id} className="coord-trip"><div><Link className="coord-mono" to={`/coordinator/trips/${trip.id}`}>{trip.id}</Link><span>{order.origin} → {order.destination}</span></div><p>{trip.status} · {driver.name}</p></div>) : <p>No active trips.</p>}</div></CoordinatorCard>
     </div>
     <div className="coord-bottom-grid">
       <CoordinatorCard title="Availability today" subtitle="Checked before a trip is assigned" action={<Link className="coord-link" to="/coordinator/availability">Check availability</Link>}><div className="coord-card-body">{[{ label: 'Vehicles', free: vehicles.length, total: data.vehicles.length, description: vehicles.map((v) => v.description).join(' · ') }, { label: 'Drivers', free: drivers.length, total: data.drivers.length, description: `${data.mechanics.filter((m) => m.available).length} mechanics available` }].map((item) => <div className="coord-availability" key={item.label}><div><span>{item.label}</span><strong>{item.free} of {item.total} free</strong></div><meter aria-label={`${item.label} available`} min={0} max={item.total || 1} value={item.free} /><p>{item.description || 'None available'}</p></div>)}</div></CoordinatorCard>

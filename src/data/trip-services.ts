@@ -5,6 +5,7 @@ import { isActiveTrip, tripInputSchema, type CreateTripInput, type ResourceAvail
 import type { TripNotificationService } from '../services/trip-notifications.ts'
 import { localTripNotifications } from './trip-notifications.ts'
 import { projectOrders } from './order-projections.ts'
+import { holdsTripResources } from '../types/trip-policy.ts'
 
 export function createTripServices(store: DemoStore, delayMs = 180, notifier: TripNotificationService = localTripNotifications) {
   const wait = () => new Promise<void>((resolve) => setTimeout(resolve, delayMs))
@@ -12,7 +13,7 @@ export function createTripServices(store: DemoStore, delayMs = 180, notifier: Tr
   const failure = (error: string) => ({ ok: false as const, error })
   const resources = (): ResourceAvailability => {
     const { data } = store.getState()
-    const active = data.trips.filter(isActiveTrip)
+    const active = data.trips.filter(holdsTripResources)
     const vehicles = data.vehicles.map((vehicle) => {
       const trips = active.filter((trip) => trip.assignment.vehicleId === vehicle.id)
       return { ...vehicle, trips, selectable: vehicle.available && !vehicle.inMaintenance && !trips.length }

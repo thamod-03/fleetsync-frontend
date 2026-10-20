@@ -9,5 +9,5 @@ export interface NavigationItem { label: string; to: string; icon: LucideIcon }
 export const navigation: Record<WebRole, NavigationItem[]> = {
   admin: [{ label: 'Dashboard', to: '/admin', icon: LayoutDashboard }],
   customer: [{ label: 'Dashboard', to: '/customer', icon: LayoutDashboard }],
-  coordinator: [{ label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard }, { label: 'Submitted orders', to: '/coordinator/orders', icon: Box }, { label: 'Trips', to: '/coordinator/trips/create', icon: Activity }, { label: 'Availability', to: '/coordinator/availability', icon: Truck }],
+  coordinator: [{ label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard }, { label: 'Submitted orders', to: '/coordinator/orders', icon: Box }, { label: 'Trips', to: '/coordinator/trips', icon: Activity }, { label: 'Availability', to: '/coordinator/availability', icon: Truck }],
 }
