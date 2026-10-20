@@ -6,8 +6,9 @@ let revision = 0
 const listeners = new Set<() => void>()
 const notify = () => { revision++; listeners.forEach((listener) => listener()) }
 
-// Vite replaces DEV at build time. There is no runtime flag or URL switch.
-const initialization = import.meta.env.DEV && __FLEETSYNC_LOCAL_DEV__
+// Both gates are compiled by Vite; runtime flags, URLs and storage cannot enable mocks.
+// Preview shares the existing adapter, but never enables the local developer tools route.
+const initialization = (import.meta.env.DEV && __FLEETSYNC_LOCAL_DEV__) || __FLEETSYNC_STAGING__
   ? import('../development/service-adapter').then(({ developmentAdapter }) => {
     adapter = developmentAdapter
     adapter.subscribe(notify)

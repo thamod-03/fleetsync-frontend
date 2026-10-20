@@ -41,7 +41,28 @@ With `npm run dev`, navigate directly to `/__development`. The page contains per
 
 Use synthetic information and test files only during local development. Do not use real credentials, payment information or identity documents.
 
-The utilities and adapter require both `import.meta.env.DEV` and a compile-time flag defined by Vite only for the serve command. Every build command defines that flag as false, including builds run with development mode or `NODE_ENV=development`. No query parameter, localStorage value or environment-mode name enables them in a built application. Tests inspect production chunks and included module paths to enforce this boundary.
+The utilities require both `import.meta.env.DEV` and a compile-time flag defined by Vite only for the local serve command (not a Vercel deployment). Every build command defines that local flag as false, including builds run with development mode or `NODE_ENV=development`. The adapter has a separate, narrowly gated Vercel Preview exception below. No query parameter, localStorage value or environment-mode name enables either gate. Tests inspect production chunks and included module paths to enforce this boundary.
+
+## Vercel Preview authentication
+
+Without a backend adapter, deployed Login normally reports service unavailable. This is intentional, not a failed authentication API request. To test existing fictional accounts in an explicitly enabled **Preview** deployment:
+
+1. In Vercel Project Settings → Environment Variables, add `VITE_FLEETSYNC_STAGING=true` scoped to **Preview only** (optionally restrict to the intended branch).
+2. Enable Vercel's **Enable access to System Environment Variables** setting (previously labelled **Automatically expose System Environment Variables**). The build must receive platform-supplied `VERCEL=1`, `VERCEL_ENV=preview`, and `VERCEL_TARGET_ENV=preview`. Do not manually override these variables or use public `VITE_VERCEL_*` aliases as proof of deployment context. Missing or conflicting metadata disables mocks.
+3. Redeploy the Preview branch using the normal `npm run build` command and `dist` output. Confirm the deployment is labelled **Preview**, not Production. An environment-variable change requires a new build.
+4. Sign in using the fictional accounts listed above. Role redirects, the existing shared dataset, remember-session behavior and logout are unchanged. `/__development` remains unavailable even in staging; use credential login to change roles.
+
+| Build/run context | Mock credential login | Developer persona controls |
+| --- | --- | --- |
+| Local `npm run dev` | Enabled | Local utility route only |
+| Vercel Preview + exact staging value `true` | Enabled | Excluded |
+| Vercel Preview without opt-in | Unavailable | Excluded |
+| Vercel Production, including staging flag set | Unavailable | Excluded |
+| Other build with staging flag alone | Unavailable | Excluded |
+
+The decision is compiled into the bundle by `vite.config.ts` using build-process variables. Client-side flags cannot enable it. Production builds exclude the adapter, fixture credentials, seed data and store even with `NODE_ENV=development` or an accidentally set staging flag. Preview intentionally contains public fictional credentials and trusts its local mock session; it is not a secure authentication system. Use only synthetic data and appropriate Preview access restrictions. Browser storage belongs to each deployment origin and does not synchronize between users or Preview URLs.
+
+Always create a **fresh Production build** with Production system variables when releasing. Do not promote, alias or copy an opted-in Preview artifact to Production: static artifacts retain the authentication policy compiled when they were built. A runtime environment change cannot secure an already-built staging artifact. Keep the unavailable adapter until real backend authentication is implemented.
 
 ## Service and persistence boundaries
 
