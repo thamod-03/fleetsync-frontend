@@ -49,6 +49,14 @@ This is a build-artifact boundary, not a server authentication/security mechanis
 
 Production does not import the development modules, mock auth factory, seed dataset or localStorage store. Its current-user provider always returns null and credential/mutation operations fail with a service-unavailable response. A previously persisted or forged local session cannot enable a role guard in that build. This protects the frontend from shipping the development bypass; it is not a replacement for server authorization.
 
+### Verified Vercel deployment diagnosis (2026-10-20)
+
+Authenticated read-only CLI/API inspection found project `fleetsync-frontend`, Vite preset, `npm run build`, `dist` output, system-variable exposure enabled and production Git branch configured as `main`. Its only deployment was nevertheless explicitly targeted to **Production**, sourced from branch `staging` at commit `8ac7285f80d0e01156ab70353e5285d62ec80ed9`. The Preview deployment listing was empty. Build logs confirmed that commit and a successful build; the source commit already contains the Preview-only mock gate. The branch name is not deployment identity. This is a deployment-target mismatch, not evidence that the guard should be relaxed.
+
+`VITE_FLEETSYNC_STAGING` exists for Preview only and is marked sensitive. Vercel CLI refuses to pull its value; metadata does not prove it equals `true`. Pulled Preview system variables identify Preview but omit framework-prefixed aliases, consistent with Vercel's documented pull behavior. Deployment inspection does not expose the original build-time value of `VITE_VERCEL_ENV`; it cannot be claimed to be `preview` for this Production artifact. It is not an authentication-policy input. No secrets are recorded here.
+
+The corrective operation is a new explicitly targeted Preview deployment using the existing gate and the exact opt-in value, rather than enabling mocks in Production. No remote settings, deployment or Git changes were authorized or performed during diagnosis. The owner must confirm the hidden opt-in value before deployment; changing it or deploying requires explicit approval. No browser surfaces were available for console/network inspection. Regression tests now explicitly reject Production builds from a branch named `staging`, with or without opt-in and with misleading public environment aliases, and exercise credential login through compiled Preview/Production adapters. Existing local authentication, redirect and persistence tests remain unchanged.
+
 Local development retains the existing shared fictional accounts, public fixture password FleetSyncDemo1!, five-attempt/15-minute mock lockout, persona switching and logout. Attempt metadata remains in the shared dataset. Expired locks permit a new attempt and Reset Demo Data clears them. These are not production security controls.
 
 ## Records, validation and document handling

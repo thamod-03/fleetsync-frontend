@@ -64,6 +64,30 @@ The decision is compiled into the bundle by `vite.config.ts` using build-process
 
 Always create a **fresh Production build** with Production system variables when releasing. Do not promote, alias or copy an opted-in Preview artifact to Production: static artifacts retain the authentication policy compiled when they were built. A runtime environment change cannot secure an already-built staging artifact. Keep the unavailable adapter until real backend authentication is implemented.
 
+### Diagnosing an unavailable deployed Login
+
+Start with the actual deployment target, not its branch name or URL. On 2026-10-20, the linked `fleetsync-frontend` project had only a Production deployment, built from branch `staging` at commit `8ac7285`. The existing Preview gate was present in that commit and correctly disabled mocks. Preview-scoped environment variables do not apply to a Production deployment. Build mode `production` in Vite logs is normal for both deployment targets and does not distinguish them.
+
+Read-only checks, from an authenticated linked checkout:
+
+```sh
+vercel project inspect
+vercel env ls --environment preview
+vercel list --environment preview
+vercel inspect <deployment-url> --json
+vercel inspect <deployment-url> --logs
+```
+
+Check `target` in deployment metadata and the source branch/commit. Confirm system-variable exposure is enabled and the staging opt-in is Preview-scoped. `VITE_VERCEL_ENV` is Vercel's public Vite alias; it is useful for diagnostics but is not used to authorize mocks. CLI environment pulls are not evidence of build-time aliases: Vercel does not prefix framework system variables in pulled environments. Sensitive variables also cannot be read back through CLI pulls, so a hidden staging value must be confirmed by its owner; never infer `false` from an omitted value or print/decrypt credentials to debug it.
+
+To create the intended deployment after approval, check out the desired source branch/commit and run:
+
+```sh
+vercel --target=preview --scope thamods-projects
+```
+
+This creates a new remote deployment; it is not a read-only check. Do not use `--prod` or redeploy the existing Production deployment expecting its target to change. Verify the result with `vercel inspect <new-deployment-url> --json` and confirm `target` is Preview (`null` can represent the default Preview target in raw API metadata). Test Login at that new URL. If the existing sensitive Preview flag was not set to the exact value `true`, request approval to update that variable before building. No Production branch or environment setting needs to change just to create an explicit CLI Preview deployment.
+
 ## Service and persistence boundaries
 
 ```text
