@@ -2,7 +2,9 @@ import { demoDatasetSchema, type DemoDataset } from '../types/domain.ts'
 
 // All identities, registrations, companies and transactions are fictional.
 const seed: DemoDataset = {
-  customerRegistrations: [], staffApplications: [], loginAttempts: [],
+  customerRegistrations: [], staffApplications: [], loginAttempts: [], reportExports: [],
+  conversations: [{ id: 'conversation-order-001-user-coordinator-user-customer', orderId: 'order-001', coordinatorId: 'user-coordinator', participantId: 'user-customer' }],
+  mailMessages: [{ id: 'mail-001', senderId: 'user-admin', recipientIds: ['user-coordinator'], subject: 'Weekly operational review', body: 'Please review the assigned trips and customer orders before our next operational meeting. Reply with any items that need attention.\n\nThanks,\nAlex', createdAt: '2026-10-19T05:00:00Z', status: 'Stored locally', readBy: ['user-admin'], starredBy: [], trashedBy: [] }],
   users: [
     { id: 'user-admin', name: 'Alex Silva', email: 'alex@fleetsync.example', role: 'admin' },
     { id: 'user-customer', name: 'Maya Fernando', email: 'maya@harbor.example', role: 'customer' },
@@ -28,7 +30,7 @@ const seed: DemoDataset = {
   trips: [{ id: 'trip-001', orderId: 'order-001', status: 'Assigned', assignment: { vehicleId: 'vehicle-1', driverId: 'driver-1', mechanicId: 'mechanic-1' } }],
   payments: [{ id: 'payment-001', quotationId: 'quotation-001', amount: 24000, currency: 'LKR', status: 'Succeeded', simulated: true }],
   notifications: [{ id: 'notification-001', userId: 'user-customer', message: 'Demo trip trip-001 has been assigned.', read: false, createdAt: '2026-10-19T05:00:00Z', simulated: true }],
-  chatMessages: [{ id: 'message-001', senderId: 'user-customer', recipientId: 'user-coordinator', text: 'Demo message: cartons will be ready for collection.', createdAt: '2026-10-19T05:10:00Z', simulated: true }],
+  chatMessages: [{ id: 'message-001', conversationId: 'conversation-order-001-user-coordinator-user-customer', orderId: 'order-001', senderId: 'user-customer', recipientId: 'user-coordinator', text: 'The cartons will be ready for collection.', createdAt: '2026-10-19T05:10:00Z', simulated: true, readBy: ['user-customer'], deliveryState: 'Stored locally' }],
   auditEvents: [{ id: 'audit-001', actorId: 'user-coordinator', action: 'Demo trip assigned', entityId: 'trip-001', createdAt: '2026-10-19T05:00:00Z' }],
 }
 

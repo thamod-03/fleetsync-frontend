@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const deploymentKeys = ['NODE_ENV', 'VERCEL', 'VERCEL_ENV', 'VERCEL_TARGET_ENV', 'VITE_FLEETSYNC_STAGING', 'VITE_VERCEL_ENV', 'VITE_VERCEL_TARGET_ENV']
+const deploymentKeys = ['NODE_ENV', 'VERCEL', 'VERCEL_ENV', 'VERCEL_TARGET_ENV', 'VERCEL_GIT_COMMIT_REF', 'VITE_FLEETSYNC_STAGING', 'VITE_VERCEL_ENV', 'VITE_VERCEL_TARGET_ENV']
 const snapshotEnvironment = () => Object.fromEntries(deploymentKeys.map((key) => [key, process.env[key]]))
 const setEnvironment = (values) => {
   for (const key of deploymentKeys) {
@@ -15,6 +15,7 @@ const setEnvironment = (values) => {
   }
 }
 const preview = { VERCEL: '1', VERCEL_ENV: 'preview', VERCEL_TARGET_ENV: 'preview' }
+const production = { VERCEL: '1', VERCEL_ENV: 'production', VERCEL_TARGET_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'staging' }
 
 test('production artifacts exclude mock authentication and utilities even with development NODE_ENV', async () => {
   const originalEnvironment = snapshotEnvironment()
@@ -29,6 +30,10 @@ test('production artifacts exclude mock authentication and utilities even with d
       { ...preview, VERCEL_ENV: 'production', VITE_FLEETSYNC_STAGING: 'true' },
       { ...preview, VERCEL_TARGET_ENV: 'production', VITE_FLEETSYNC_STAGING: 'true' },
       { VERCEL: '1', VERCEL_ENV: 'production', VERCEL_TARGET_ENV: 'production', VITE_FLEETSYNC_STAGING: 'true' },
+      production,
+      { ...production, VITE_FLEETSYNC_STAGING: 'false' },
+      // A branch named staging and public aliases cannot override the real target.
+      { ...production, VITE_FLEETSYNC_STAGING: 'true', VITE_VERCEL_ENV: 'preview', VITE_VERCEL_TARGET_ENV: 'preview' },
     ]
     for (const deployment of deniedDeployments) {
       for (const environment of ['production', 'development']) {
@@ -41,7 +46,7 @@ test('production artifacts exclude mock authentication and utilities even with d
           assert.equal(code.includes(forbidden), false, `${environment} build contains ${forbidden}`)
         }
         const modules = chunks.flatMap((chunk) => Object.keys(chunk.modules)).map((path) => path.replaceAll('\\', '/'))
-        for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
+        for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/communication-services.ts', '/src/data/communication-projections.ts', '/src/data/message-notifications.ts', '/src/data/report-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
           assert.equal(modules.some((path) => path.includes(forbidden)), false, `${environment} build imports ${forbidden}`)
         }
         assert.ok(code.includes('This service is currently unavailable. Please try again later.'))
@@ -69,16 +74,22 @@ test('opted-in Preview builds include mock services but exclude developer tools 
   }
 })
 
-test('built service facade authenticates all Preview roles only when opted in', async () => {
+test('built service facade allows opted-in Preview and rejects Production on a staging branch', async () => {
   const originalEnvironment = snapshotEnvironment()
   const directory = await mkdtemp(path.join(tmpdir(), 'fleetsync-auth-build-'))
   try {
     await writeFile(path.join(directory, 'package.json'), '{"type":"module"}')
-    for (const enabled of [false, true]) {
-      setEnvironment({ ...preview, NODE_ENV: 'production', VITE_FLEETSYNC_STAGING: String(enabled) })
+    const scenarios = [
+      { name: 'preview-disabled', env: preview, enabled: false },
+      { name: 'preview-enabled', env: { ...preview, VITE_VERCEL_ENV: 'preview', VITE_FLEETSYNC_STAGING: 'true' }, enabled: true },
+      { name: 'production-disabled', env: production, enabled: false },
+      { name: 'production-enabled', env: { ...production, VITE_FLEETSYNC_STAGING: 'true' }, enabled: false },
+    ]
+    for (const { name, env, enabled } of scenarios) {
+      setEnvironment({ ...env, NODE_ENV: 'production' })
       const result = await build({
         logLevel: 'error', ssr: { noExternal: true },
-        build: { ssr: 'src/services/application-services.ts', write: false, rollupOptions: { output: { entryFileNames: `facade-${enabled}.js` } } },
+        build: { ssr: 'src/services/application-services.ts', write: false, rollupOptions: { output: { entryFileNames: `facade-${name}.js` } } },
       })
       for (const bundle of Array.isArray(result) ? result : [result]) {
         for (const item of bundle.output) {
@@ -86,12 +97,12 @@ test('built service facade authenticates all Preview roles only when opted in', 
           await writeFile(path.join(directory, item.fileName), item.type === 'chunk' ? item.code : item.source)
         }
       }
-      const { applicationServices, initializeApplicationServices, getCurrentUser } = await import(pathToFileURL(path.join(directory, `facade-${enabled}.js`)).href)
+      const { applicationServices, initializeApplicationServices, getCurrentUser } = await import(pathToFileURL(path.join(directory, `facade-${name}.js`)).href)
       await initializeApplicationServices()
       assert.equal(getCurrentUser(), null)
       for (const [email, role] of [['alex@fleetsync.example', 'admin'], ['maya@harbor.example', 'customer'], ['ravi@fleetsync.example', 'coordinator']]) {
         const result = await applicationServices.login({ email, password: 'FleetSyncDemo1!', rememberSession: true })
-        assert.equal(result.ok, enabled)
+        assert.equal(result.ok, enabled, `${name}: credential login for ${role}`)
         if (enabled) {
           assert.equal(result.data.role, role)
           assert.equal(getCurrentUser().role, role)

@@ -1,5 +1,21 @@
 # FleetSync frontend
 
+## Coordinator Batch 03 — Reports, Chat and Internal Mail
+
+The Coordinator sidebar now opens `/coordinator/reports`, `/coordinator/chat` and `/coordinator/mail`. Dashboard report shortcuts and Trip Details → Open chat connect to these workflows. Existing Authentication, order/quotation, availability, assignment and lifecycle behavior is preserved. No Vercel or authentication environment configuration is changed by this batch.
+
+Read-only Figma references: Operational reports `142:5026`, Chat `145:5122`, Mail / Inbox `229:10801`; associated tracker `122:4965`. The inspected layouts reuse the existing 248px sidebar, header, typography and colors. Separate compose, alternate report-result and PDF dialogs were not found; these reuse the established dialog/table styles and browser print interface.
+
+- **Reports:** Trip summary, Vehicle utilisation, Driver activity, Orders and payments; validated UTC dates, base/customer filters, generated snapshots, recorded completion chart, result tables, CSV download, print/save-as-PDF and persisted recent export snapshots. CSV includes the same values, filters and calculation notes shown on screen. Export PDF opens the browser print dialog; saving/cancelling is controlled by the browser, so recent history records a prepared export rather than claiming a file was saved. CSV replaces the design's Excel label because no XLSX package is installed or required. Each report includes an expandable calculation basis for missing dates/readings and undated payments.
+- **Chat:** order search, customer/assigned staff selection, direct conversation history, validated text, per-user local unread state and stored messages. Current assignment references supply staff identities. Queries never create notifications. A save creates the conversation/message/recipient notice together; retries with the same message ID are idempotent. No remote read/delivery or online presence is asserted. All roles use the same services and records; future Customer/mobile screens can reuse them without another dataset.
+- **Mail:** shared Administrator/Coordinator service contracts, Inbox/Starred/Sent/Drafts/Trash, search, reading pane, local read/unread, compose, draft save/edit, reply/reply-all, forward, stars and per-user trash/restore. Stored messages cannot be edited. Drafts remain private to their sender. Notifications are created once when stored, not when read/refreshed. Messages explicitly report internal storage without external email delivery. No real attachments or fabricated policy documents are added.
+
+The existing `fleetsync-demo-v1` snapshot safely defaults missing `conversations`, `mailMessages` and `reportExports` collections to empty arrays, plus local read metadata on chat messages. Existing IDs, records and sessions remain intact. Legacy messages without order/conversation IDs are retained but not assigned to a guessed order. Reset Demo Data restores the canonical dataset, including one scoped customer message, one internal mail message and empty export history. Reset explicitly to load new fixtures into an older saved dataset; it is not required for compatibility.
+
+For a local check, sign in as Coordinator, generate reports for dates covering your saved orders/trips, change base/customer/type and compare CSV/print output. Open Chat, select an order/person and send a message. Switch to the Customer in the same browser to inspect that conversation through the shared service (Customer Chat UI is outside this batch). Open Mail, read the seed message, save/edit a draft, send to Administrator, and inspect the same records through the shared Administrator mail service. Check refresh, unread/star/trash changes and Reset Demo Data. Browser visual comparison, native download/print, mobile layouts, focus/keyboard handling and end-to-end persona UI checks remain manual. Backend delivery, cross-tab/machine synchronization and real-time messaging remain unimplemented.
+
+Run `npm run build`, `npm run lint`, `npm test`. Focused workspace tests cover report calculations/filtering/empty data, CSV safety/snapshot history, message validation, participant access, role sharing, local read flags, idempotent notifications, mail composition/drafts/replies, persistence/migration and reset. Existing Authentication and Coordinator regression tests and Production/Preview artifact checks remain active. No dependency installation or deployment is required.
+
 FleetSync is the frontend of the final Fleet Management System, developed incrementally from the approved Figma screens and system diagrams. React 19, TypeScript, Vite, Tailwind v4, shadcn Base UI/Nova, React Router and Zustand remain the established stack.
 
 The backend is not implemented yet. Local development uses typed mock services and a persistent fictional dataset; these are implementation adapters, not product UI content. Production builds intentionally do not authenticate users until a server-backed adapter is connected.
@@ -63,6 +79,30 @@ Without a backend adapter, deployed Login normally reports service unavailable. 
 The decision is compiled into the bundle by `vite.config.ts` using build-process variables. Client-side flags cannot enable it. Production builds exclude the adapter, fixture credentials, seed data and store even with `NODE_ENV=development` or an accidentally set staging flag. Preview intentionally contains public fictional credentials and trusts its local mock session; it is not a secure authentication system. Use only synthetic data and appropriate Preview access restrictions. Browser storage belongs to each deployment origin and does not synchronize between users or Preview URLs.
 
 Always create a **fresh Production build** with Production system variables when releasing. Do not promote, alias or copy an opted-in Preview artifact to Production: static artifacts retain the authentication policy compiled when they were built. A runtime environment change cannot secure an already-built staging artifact. Keep the unavailable adapter until real backend authentication is implemented.
+
+### Diagnosing an unavailable deployed Login
+
+Start with the actual deployment target, not its branch name or URL. On 2026-10-20, the linked `fleetsync-frontend` project had only a Production deployment, built from branch `staging` at commit `8ac7285`. The existing Preview gate was present in that commit and correctly disabled mocks. Preview-scoped environment variables do not apply to a Production deployment. Build mode `production` in Vite logs is normal for both deployment targets and does not distinguish them.
+
+Read-only checks, from an authenticated linked checkout:
+
+```sh
+vercel project inspect
+vercel env ls --environment preview
+vercel list --environment preview
+vercel inspect <deployment-url> --json
+vercel inspect <deployment-url> --logs
+```
+
+Check `target` in deployment metadata and the source branch/commit. Confirm system-variable exposure is enabled and the staging opt-in is Preview-scoped. `VITE_VERCEL_ENV` is Vercel's public Vite alias; it is useful for diagnostics but is not used to authorize mocks. CLI environment pulls are not evidence of build-time aliases: Vercel does not prefix framework system variables in pulled environments. Sensitive variables also cannot be read back through CLI pulls, so a hidden staging value must be confirmed by its owner; never infer `false` from an omitted value or print/decrypt credentials to debug it.
+
+To create the intended deployment after approval, check out the desired source branch/commit and run:
+
+```sh
+vercel --target=preview --scope thamods-projects
+```
+
+This creates a new remote deployment; it is not a read-only check. Do not use `--prod` or redeploy the existing Production deployment expecting its target to change. Verify the result with `vercel inspect <new-deployment-url> --json` and confirm `target` is Preview (`null` can represent the default Preview target in raw API metadata). Test Login at that new URL. If the existing sensitive Preview flag was not set to the exact value `true`, request approval to update that variable before building. No Production branch or environment setting needs to change just to create an explicit CLI Preview deployment.
 
 ## Service and persistence boundaries
 

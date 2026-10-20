@@ -7,6 +7,9 @@ let resetEmail: string | undefined
 
 export const developmentAdapter: ServiceAdapter = {
   services: {
+    getReportContext: mockServices.getReportContext, generateReport: mockServices.generateReport, recordReportExport: mockServices.recordReportExport,
+    getChatWorkspace: mockServices.getChatWorkspace, getConversation: mockServices.getConversation, sendChatMessage: mockServices.sendChatMessage, markConversationRead: mockServices.markConversationRead,
+    getMailbox: mockServices.getMailbox, saveMail: mockServices.saveMail, setMailFlag: mockServices.setMailFlag,
     getTrips: mockServices.getTrips, getTripDetails: mockServices.getTripDetails,
     cancelTrip: mockServices.cancelTrip, completeTrip: mockServices.completeTrip,
     getAvailability: mockServices.getAvailability, getTripAssignmentContext: mockServices.getTripAssignmentContext,

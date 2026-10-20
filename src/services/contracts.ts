@@ -6,12 +6,25 @@ import type { FareQuotation } from '../types/domain.ts'
 import type { Trip } from '../types/domain.ts'
 import type { CreateTripInput, ResourceAvailability, TripAssignmentContext, TripAssignmentDetails } from '../types/trip-assignment.ts'
 import type { CancelTripInput, CompleteTripInput, ManagedTrip, TripList } from '../types/trip-management.ts'
+import type { ChatWorkspace, ComposeMailInput, ConversationView, Mailbox, MailFlag, MailMessage, SendChatInput } from '../types/communications.ts'
+import type { ChatMessage } from '../types/domain.ts'
+import type { OperationalReport, ReportContext, ReportExport, ReportFilters } from '../types/reporting.ts'
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string }
 export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getReportContext(): Promise<ServiceResult<ReportContext>>
+  generateReport(input: ReportFilters): Promise<ServiceResult<OperationalReport>>
+  recordReportExport(report: OperationalReport, format: 'CSV' | 'PDF'): Promise<ServiceResult<ReportExport>>
+  getChatWorkspace(): Promise<ServiceResult<ChatWorkspace>>
+  getConversation(id: string): Promise<ServiceResult<ConversationView>>
+  sendChatMessage(input: SendChatInput): Promise<ServiceResult<ChatMessage>>
+  markConversationRead(id: string): Promise<ServiceResult<null>>
+  getMailbox(): Promise<ServiceResult<Mailbox>>
+  saveMail(input: ComposeMailInput, draft: boolean): Promise<ServiceResult<MailMessage>>
+  setMailFlag(id: string, flag: MailFlag, enabled: boolean): Promise<ServiceResult<null>>
   getTrips(): Promise<ServiceResult<TripList>>
   getTripDetails(tripId: string): Promise<ServiceResult<ManagedTrip>>
   cancelTrip(input: CancelTripInput): Promise<ServiceResult<Trip>>

@@ -1,5 +1,7 @@
 import { createTripServices } from './trip-services.ts'
 import { createTripManagementServices } from './trip-management-services.ts'
+import { createCommunicationServices } from './communication-services.ts'
+import { createReportServices } from './report-services.ts'
 export type { CreateTripInput } from '../types/trip-assignment.ts'
 import { createSeedData } from './seed.ts'
 import { demoStore, type DemoStore } from '../store/demo-store.ts'
@@ -20,6 +22,8 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
     ...createCoordinatorServices(store, delayMs),
     ...createTripServices(store, delayMs),
     ...createTripManagementServices(store, delayMs),
+    ...createCommunicationServices(store, delayMs),
+    ...createReportServices(store, delayMs),
     async signIn(role: WebRole) {
       await wait()
       const user = store.getState().data.users.find((item) => item.role === role && item.accountStatus !== 'Pending')
