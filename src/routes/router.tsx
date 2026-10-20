@@ -2,7 +2,10 @@ import { Outlet, type RouteObject } from 'react-router'
 import { AppShell } from '../components/layout/app-shell'
 import { AuthLayout } from '../components/layout/auth-layout'
 import { LoginPage } from '../features/auth/login-page'
-import { AuthPlaceholder } from '../features/auth/auth-placeholder'
+import { RegistrationPage } from '../features/auth/registration-page'
+import { StaffApplicationPage } from '../features/auth/staff-application-page'
+import { ForgotPasswordPage } from '../features/auth/forgot-password-page'
+import { ResetPasswordPage } from '../features/auth/reset-password-page'
 import { AdminDashboardPage } from '../features/admin/dashboard-page'
 import { CustomerDashboardPage } from '../features/customer/dashboard-page'
 import { CoordinatorDashboardPage } from '../features/coordinator/dashboard-page'
@@ -11,14 +14,15 @@ import { HomeRedirect, RouteErrorPage, SystemPage } from './system-pages'
 
 export const routes: RouteObject[] = [{
   element: <Outlet />, errorElement: <RouteErrorPage />, children: [
+    ...(import.meta.env.DEV && __FLEETSYNC_LOCAL_DEV__ ? [{ path: '/__development', lazy: () => import('../development/tools-page') }] : []),
     { index: true, element: <HomeRedirect /> },
     { element: <AuthLayout />, children: [
       { path: '/login', element: <LoginPage /> },
-      { path: '/register', element: <AuthPlaceholder title="Customer registration" /> },
-      { path: '/register/customer', element: <AuthPlaceholder title="Customer registration" /> },
-      { path: '/forgot-password', element: <AuthPlaceholder title="Password recovery" /> },
-      { path: '/reset-password', element: <AuthPlaceholder title="Reset password" /> },
-      { path: '/apply/staff', element: <AuthPlaceholder title="Staff application" /> },
+      { path: '/register', element: <RegistrationPage /> },
+      { path: '/register/customer', element: <RegistrationPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
+      { path: '/apply/staff', element: <StaffApplicationPage /> },
     ] },
     { element: <RoleGuard role="admin" />, children: [{ path: '/admin', element: <AppShell />, children: [
       { index: true, element: <AdminDashboardPage /> }, { path: '*', element: <SystemPage kind="not-found" /> },

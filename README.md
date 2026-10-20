@@ -1,6 +1,8 @@
-﻿# FleetSync frontend foundation
+﻿# FleetSync frontend
 
-React + TypeScript + Vite university demonstration. Authentication, payments and message delivery are simulations. No production backend or security is provided.
+FleetSync is the frontend of the final Fleet Management System, developed incrementally from the approved Figma screens and system diagrams. React 19, TypeScript, Vite, Tailwind v4, shadcn Base UI/Nova, React Router and Zustand remain the established stack.
+
+The backend is not implemented yet. Local development uses typed mock services and a persistent fictional dataset; these are implementation adapters, not product UI content. Production builds intentionally do not authenticate users until a server-backed adapter is connected.
 
 ## Run and verify
 
@@ -12,62 +14,69 @@ npm run lint
 npm test
 ```
 
-Use the existing dependency tree and lockfile. Tests require Node 22 with experimental type stripping support or a newer compatible Node version; no test dependencies are installed.
+Use the existing dependency tree and lockfile. Tests use Node 22 type stripping (experimental on the installed version), Vite server rendering and artifact inspection. No additional packages are required.
 
-## Source structure
+`npm run dev` enables the local mock adapter. `npm run preview` serves the production bundle, which has no mock authentication, fixture credentials or developer utilities and reports unavailable services rather than granting access.
+
+## Authentication routes
+
+- `/login`: credentials, role redirects and Figma error state.
+- `/forgot-password`: email validation, recovery request and 45-second resend cooldown.
+- `/reset-password`: password-strength and confirmation validation.
+- `/register` and `/register/customer`: company/contact registration.
+- `/apply/staff`: staff application and document selection.
+- `/admin`, `/customer`, `/coordinator`: existing guarded workspace routes.
+
+The standard authentication pages follow the approved Figma copy and contain no university disclaimers, fixture account panels or persona controls. File/drop controls retain the approved appearance. Service outcomes are truthful: unavailable email/reset integrations do not claim to send email or change a password. Terms of service content is not yet connected.
+
+## Development-only utilities
+
+With `npm run dev`, navigate directly to `/__development`. The page contains persona switching, fixture credentials, Reset Demo Data, synthetic attachment downloads, and a link to exercise the local reset flow. These controls are isolated from Login and the account menu.
+
+| Local persona | Email | Fixture password |
+| --- | --- | --- |
+| Fleet Administrator | alex@fleetsync.example | FleetSyncDemo1! |
+| Customer | maya@harbor.example | FleetSyncDemo1! |
+| Operational Coordinator | ravi@fleetsync.example | FleetSyncDemo1! |
+
+Use synthetic information and test files only during local development. Do not use real credentials, payment information or identity documents.
+
+The utilities and adapter require both `import.meta.env.DEV` and a compile-time flag defined by Vite only for the serve command. Every build command defines that flag as false, including builds run with development mode or `NODE_ENV=development`. No query parameter, localStorage value or environment-mode name enables them in a built application. Tests inspect production chunks and included module paths to enforce this boundary.
+
+## Service and persistence boundaries
 
 ```text
-src/
-  components/
-    layout/        AuthLayout, AppShell, Sidebar, Header, PageContainer, DemoDashboard
-    ui/            Base UI Button, button variants, loading/empty/error states
-  features/
-    auth/          Demo persona login and reserved auth pages
-    admin/         Placeholder dashboard
-    customer/      Placeholder dashboard
-    coordinator/   Placeholder dashboard
-  routes/          Route definitions, role guards, navigation, system pages
-  types/           Zod schemas and inferred shared domain types
-  data/            Canonical fictional seed and Promise-based mock services
-  store/           Shared Zustand store
-  hooks/           Reactive session and storage notice hooks
-  lib/             Validated storage adapter and class-name utility
-  App.tsx          Browser router provider
-  main.tsx         React root
-  index.css        Existing Nova tokens and global base styles
-  assets/          Retained, unused starter assets
-  App.css          Inactive compatibility file; no starter styles
-  ...
-docs/ASSUMPTIONS.md
-tests/             Foundation behavior and route/render checks
+features/auth/          Presentation components and reusable form validation
+services/contracts.ts   Typed application service and session adapter contracts
+services/application-services.ts
+                        Presentation-facing facade and session subscriptions
+services/unavailable-adapter.ts
+                        Fail-closed production default; replace with backend integration
+development/            Isolated local adapter and tools route
+data/                   Existing mock factories, seeds and development fixture metadata
+store/ and lib/         Existing Zustand store and validated persistence
 ```
 
-## Routes and personas
+Components call `applicationServices`; they do not import mock factories, fixture credentials or localStorage. Existing hooks subscribe through the active service adapter. Startup initializes the adapter before rendering so saved local sessions retain the existing redirect behavior. Production does not import the seed/store and never trusts a localStorage session.
 
-`/login` provides fictional Administrator, Customer and Operational Coordinator personas, without passwords. `/register`, `/register/customer`, `/forgot-password`, `/reset-password`, and `/apply/staff` are explicit placeholders for future Figma work. `/admin`, `/customer`, and `/coordinator` have guarded dashboards. Unknown addresses show a not-found page; wrong-role access goes to `/unauthorized` (also available as `/access-denied`). Anonymous requests return to login with an internal return destination.
+Development retains `fleetsync-demo-v1` and backward-compatible snapshot loading. Customer registrations create separate linked Pending user/customer/company records. Staff applications remain independent Pending submissions; no automatic approval rule is added. Pending users cannot log in. Admin can read submissions through the existing `mockServices.getPendingApplications()` for future approval UI work. Logout and persona switching retain records; Reset Demo Data restores seed data.
 
-The account dropdown switches personas or logs out. Shared records and the demo session persist in this browser profile under `fleetsync-demo-v1`. Logout preserves records. Reset Demo Data restores the original fictional dataset while retaining the current persona. Unavailable storage produces a notice and falls back to memory. Invalid saved data is replaced by validated seed data.
+Passwords are validated in memory and never persisted. Local credential login still uses the public fixture password above. Keep me signed in retains the existing simplified local behavior: checked persists the session, unchecked clears it on page reload. This is not a production session mechanism.
 
-## Integration contract
+Document selection validates file extensions/MIME types and the 5 MB limit. The development adapter receives only filename, type and size, never File/Blob contents. It does not call FileReader, text(), arrayBuffer(), or upload anything. Only attachment metadata is persisted. The temporary adapter identifies driving-licence entries from their filename; use the synthetic downloads on the utility page. A future backend must replace that classification with an explicit verified document contract and secure storage.
 
-- Domain schemas/types live in `src/types/domain.ts`; refine them against the finalized diagrams before feature work.
-- Read reactive values using the shared Zustand store and hooks. Send mutations through `mockServices`; never manipulate localStorage from components.
-- `createMockServices(store, delayMs)` and `createDemoStore(storage)` allow deterministic isolated checks.
-- Services currently expose signIn, logout, resetDemoData, getDashboard, getAvailability, and createTrip. The trip service requires all three available resources and reserves them together after rechecking availability. No trip feature screen is implemented yet.
-- Seed/customer dashboard relationships use a person profile linked to a company, not a company as the logged-in user.
-- Only implemented pages belong in active sidebar navigation. Add feature routes and items together.
-- Keep Figma read-only. Token observations, provisional rules and deferred scope are recorded in docs/ASSUMPTIONS.md.
+## Manual checks
 
-## Manual browser checklist
+1. With `npm run dev`, open Login: no developer panel or branding disclaimer appears. Check validation, wrong credentials, lockout, valid role redirects and both remember-session choices.
+2. Use `/__development` to switch personas. Confirm Customer cannot access `/admin`, and sign-out preserves the dataset.
+3. Request recovery: the integration-unavailable response must say no email was sent. Resend counts down. Use the utility page's reset link, check strength/matching, then verify no password change is claimed.
+4. Register synthetic company/contact details. The pending record survives refresh; duplicate emails are rejected and pending accounts cannot log in. Passwords are absent from saved records.
+5. Select Driver, browse/drop synthetic NIC and driving-licence files, remove entries, test size/type errors, then submit. Change roles and verify conditional document validation and pending persistence. The public application route has no invented invitation ID or expiry; an actual invitation context renders the original Figma banner.
+6. Compare 1440px desktop composition to Figma; check 768px/375px layouts, focus, keyboard operation and error announcements. This tool session has no browser surface, so interactive visual checks remain manual.
+7. Build and preview. `/__development` must resolve to not-found; fixture credentials and forged localStorage sessions must not grant access. Authentication must report service unavailability until backend integration is supplied.
 
-1. Open `/admin` while logged out: login appears with a return destination.
-2. Choose Administrator: `/admin` opens. Use the account dropdown to switch to Customer and Coordinator; each role lands on its own dashboard.
-3. While Customer is active, navigate to `/admin`: access denied appears; return to your dashboard.
-4. Refresh: the same persona and saved records return. Log out and log in again: records remain.
-5. Click Reset Demo Data: success feedback appears and original counts return. The automated test also verifies reset after an actual service mutation.
-6. Visit registration/recovery links and unknown URLs; each has a useful return action.
-7. At phone width, toggle navigation and ensure content fits. Use Tab, Enter, Escape and arrow keys to check account-menu access and focus.
+## Before production deployment
 
-## Next stage
+The artifact builds successfully but is not a deployed authentication system. Implement a server-backed adapter with server-side authentication/authorization, secure password hashing and session management, recovery-token generation/delivery/expiry, password history and session revocation, approval workflows, published terms/consent, and secure document storage/validation. Replace localStorage business persistence with authenticated APIs. Frontend role guards and mock lockout are not security controls.
 
-Inspect the exact authentication frames through Figma read-only tools, then implement login/recovery/registration forms using the installed React Hook Form, Zod and compatible resolvers. Preserve demo-only behavior and refine shared contracts with the finalized diagrams before expanding the Customer-to-Coordinator order workflow.
+Unresolved business policies and Figma differences are recorded in `docs/ASSUMPTIONS.md`. No external services, backend, Git commit, push or deployment are added by this task.

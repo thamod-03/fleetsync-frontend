@@ -1,8 +1,10 @@
-# AGENTS.md — FleetSync Frontend Demonstration
+# AGENTS.md — FleetSync Frontend
 
 ## 1. Mission
 
-Build and refine the **FleetSync / Fleet Management System** frontend as a runnable, coherent **React + TypeScript demonstration** based on the team's approved Figma screens and finalized system diagrams. Optimize for a reliable, convincing demonstration with connected workflows—not for a production backend.
+Build and refine the **FleetSync / Fleet Management System** frontend as a maintainable **React + TypeScript application** based on the team's approved Figma screens and finalized system diagrams. The current implementation uses temporary mock services while the backend is developed.
+
+FleetSync is intended to become the final production application. Dummy data and mock services are temporary implementation mechanisms, not a reason to change the approved UI copy or introduce demo-specific visual elements. Development-only utilities must be isolated from production-facing screens.
 
 **Current implementation scope:**
 - Authentication: login, recovery/reset, customer registration, staff application.
@@ -29,7 +31,7 @@ Known decisions and unresolved items:
 - The standard trip lifecycle is `Draft -> Assigned -> In Progress -> Completed`, with a `Cancelled` state; do not invent additional transitions.
 - **Trip cancellation eligibility is unresolved across the diagrams/designs:** some material allows cancellation from `In Progress`, while the Figma screen says `Draft`/`Assigned` only. Do not silently choose or broaden a rule. Document the temporary choice and keep UI/mock validation consistent until the team confirms it.
 - Require actual return date and final odometer before completing a trip; do not display a trip as legitimately completed while required completion data is missing.
-- Vehicle/driver/mechanic release rules after cancellation and the exact reassignment policy need confirmation. Label any interim handling as demo behavior.
+- Vehicle/driver/mechanic release rules after cancellation and the exact reassignment policy need confirmation. Document interim handling in developer documentation without adding unapproved copy to product screens.
 - A customer account represents a **person** linked to a **customer company**; do not conflate the two. Preserve mutually exclusive user-role specialization where represented in the approved EER.
 
 ## 3. Figma is STRICTLY READ-ONLY
@@ -90,18 +92,20 @@ Suggested route groupings (adapt to an existing router rather than duplicating i
 - Coordinator: `/coordinator/*` — dashboard, submitted orders/review, trips/create/details, availability, reports, chat, mail.
 - Common: access-denied, not-found, account/profile as required by Figma.
 
-## 6. Mock data and demo behavior
+## 6. Temporary mock implementation and product presentation
 
 Use **one canonical, typed mock data source** and shared mock service functions. Do not keep conflicting copies of an order/trip/user inside individual screens.
 
 Include realistic but **fictional** and consistent related records for the necessary domain concepts: users/roles, customer companies, staff applications, vehicles, drivers, mechanics, transport orders, quotations, trips/assignments, payments/invoices, maintenance records, chat, notifications, and audit events. Align fields and relationships with the supplied finalized diagrams. Use stable IDs; keep list pages, details, dashboards, and counts consistent.
 
 - Expose Promise-based services so the mocks can eventually be replaced by API calls. Small simulated delays are acceptable; provide loading and failure states.
-- Persist changes to browser `localStorage` (or the repository's established persistence mechanism) and include a **Reset Demo Data** action.
-- Provide clearly labeled demo accounts/persona switching for Admin, Customer, and Coordinator. Demo authentication and frontend route guards are **not security controls**.
+- Persist development changes to browser `localStorage` (or the repository's established persistence mechanism); keep **Reset Demo Data** and fixture accounts/persona switching in an isolated development-only utility for Admin, Customer, and Coordinator.
+- Never expose persona switching, hardcoded fixture passwords, mock credential authentication, or trusted localStorage sessions in production builds. Use compile-time environment restrictions; production must fail closed until a backend authentication/session adapter is implemented. Frontend route guards are **not security controls**.
+- Separate presentation, reusable validation, service contracts/adapters, mock implementations, and persistence. Product components must not directly access localStorage, fixture credentials, canned document data, or mock factories. Keep changes focused; do not rewrite the architecture.
 - A customer-created order must appear in Coordinator's submitted orders; a Coordinator-created quotation must appear to the customer; accepted quote/payment status must update across roles.
 - A newly created trip must reference one available vehicle, driver, and mechanic. Recheck availability at commit time; prevent duplicate assignment within the mock repository; update affected list/detail/availability screens together.
-- Notifications, email, chat delivery, file exports, and payments are **simulations**. Never suggest an actual payment was charged or a real email/push message was sent. Clearly label demo-mode actions.
+- Notifications, email, chat delivery, file exports, and payments are currently mocked. Document these limitations in developer documentation and development utilities. Preserve approved Figma copy in normal product screens; show a concise, truthful unavailable-integration response when an action cannot be performed. Never claim an email was sent, a password changed, or a payment charged when no such action occurred. Do not add university-demo banners or general simulation disclaimers to product screens.
+- Preserve the approved upload interface. Development adapters may validate and persist filename/type/size metadata, but must never read, upload or persist actual identity-document contents in localStorage. Use synthetic fixtures for development and testing.
 - No real passwords, payment cards, identity documents, private personal data, live API credentials, or secrets in mock data or committed files.
 - Local browser storage does not synchronize across machines. Demo handoffs should occur by switching roles in the **same browser profile**, or by resetting/reseeding data.
 
@@ -163,7 +167,7 @@ One integration lead owns **shared** routing, theme/tokens, global layouts, shar
 - **Do not edit Figma.** All design changes happen in code.
 - **Do not implement a real backend or external integrations** for this demonstration without explicit approval.
 - **Do not invent or silently change business rules.** Maintain `docs/ASSUMPTIONS.md` for unresolved decisions.
-- **Do not claim simulations are real transactions or deliveries.**
+- **Preserve approved product UI copy. Do not claim mocked actions are real transactions or deliveries. Explain unavailable integrations at the action boundary and retain full limitations in developer documentation.**
 - **Do not implement Driver/Mechanic mobile apps or Fleet Owner features** as part of this four-module sprint.
 - **Do not use `--force` / `--legacy-peer-deps` to hide npm conflicts.**
 - **Do not sacrifice a runnable build** for visual polish.

@@ -1,10 +1,14 @@
-import { useStore } from 'zustand'
-import { demoStore } from '../store/demo-store.ts'
+import { useSyncExternalStore } from 'react'
+import { getApplicationRevision, getCurrentUser, getStorageNotice, subscribeApplication } from '../services/application-services'
 
 export function useDemoUser() {
-  return useStore(demoStore, (state) => state.data.users.find((user) => user.id === state.sessionUserId) ?? null)
+  return useSyncExternalStore(subscribeApplication, getCurrentUser, getCurrentUser)
 }
 
 export function useStorageNotice() {
-  return useStore(demoStore, (state) => state.storageNotice)
+  return useSyncExternalStore(subscribeApplication, getStorageNotice, getStorageNotice)
+}
+
+export function useApplicationRevision() {
+  return useSyncExternalStore(subscribeApplication, getApplicationRevision, getApplicationRevision)
 }

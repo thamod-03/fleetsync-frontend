@@ -1,31 +1,44 @@
 import { useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '../../components/ui/button'
-import { ErrorState } from '../../components/ui/page-states'
-import { mockServices } from '../../data/mock-services'
-import { roleLabels } from '../../routes/navigation'
+import { AuthBanner, AuthCheck, AuthField, AuthHeading, AuthSubmit } from './auth-components'
+import { loginSchema, type LoginInput } from './auth-schemas'
+import type { LoginResult } from '../../services/contracts'
+import shield from '../../assets/auth/shield.svg'
+import { applicationServices } from '../../services/application-services'
 import { getLoginDestination } from '../../routes/access'
-import { webRoles, type WebRole } from '../../types/domain'
 
 export function LoginPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const [busy, setBusy] = useState<WebRole | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const signIn = async (role: WebRole) => {
-    setBusy(role)
-    setError(null)
-    const result = await mockServices.signIn(role)
-    if (result.ok) {
-      navigate(getLoginDestination(role, params.get('from')), { replace: true })
-    } else setError(result.error)
-    setBusy(null)
+  const [failure, setFailure] = useState<LoginResult | null>(null)
+  const { register, handleSubmit, control, formState: { errors, isSubmitting }, resetField } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', rememberSession: false },
+  })
+  const loading = isSubmitting
+  const submit = async (values: LoginInput) => {
+    const result = await applicationServices.login(values)
+    if (result.ok) { resetField('password'); navigate(getLoginDestination(result.data.role, params.get('from')), { replace: true }) }
+    else setFailure(result)
   }
-  return <section className="space-y-5 rounded-xl border bg-card p-6 sm:p-8">
-    <div><p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">Frontend foundation</p><h1 className="text-2xl font-semibold">Welcome to FleetSync</h1></div>
-    <p className="text-sm leading-6 text-muted-foreground">Choose a fictional persona to explore the shared workspace. Demo-only authentication and route guards provide no production security.</p>
-    {error && <ErrorState message={error} />}
-    <div className="grid gap-3">{webRoles.map((role) => <Button className="h-11 justify-start" variant="outline" disabled={busy !== null} key={role} onClick={() => void signIn(role)}>{busy === role ? 'Opening workspace…' : `Continue as ${roleLabels[role]}`}</Button>)}</div>
-    <nav aria-label="Authentication" className="flex flex-wrap gap-4 text-sm underline underline-offset-4"><Link to="/register">Customer registration</Link><Link to="/forgot-password">Forgot password</Link><Link to="/apply/staff">Staff application</Link></nav>
+  return <section className="auth-content">
+    {!failure && <div className="auth-login-spacer" aria-hidden="true" />}
+    <AuthHeading title="Sign in">Welcome back. Use the email registered with your account.</AuthHeading>
+    {failure && !failure.ok && <AuthBanner tone="danger" title={failure.attemptsLeft !== undefined ? 'Incorrect email or password' : 'Unable to sign in'}>{failure.error}</AuthBanner>}
+    <form className="auth-form" noValidate onSubmit={handleSubmit(submit)} aria-busy={loading}>
+      <fieldset disabled={loading} className="auth-form">
+        <AuthField label="Email address" registration={register('email')} type="email" autoComplete="username" placeholder="name@company.lk" error={errors.email?.message} />
+        <AuthField label="Password" registration={register('password')} type="password" autoComplete="current-password" placeholder="••••••••••" error={errors.password?.message} invalid={Boolean(failure)}
+          helper={failure?.attemptsLeft !== undefined ? `${failure.attemptsLeft} attempts left` : undefined} />
+        <div className="auth-options"><Controller name="rememberSession" control={control} render={({ field }) => <AuthCheck id="remember-session" disabled={loading} checked={field.value ?? false} onChange={field.onChange}>Keep me signed in</AuthCheck>} />
+          <Link className="auth-link" to="/forgot-password">Forgot password?</Link></div>
+        <AuthSubmit busy={loading}>Sign in</AuthSubmit>
+      </fieldset>
+    </form>
+    <div className="auth-divider">New here?</div>
+    <div className="auth-row"><Button className="auth-button" variant="outline" render={<Link to="/register" />}>Register as customer</Button><Button className="auth-button" variant="outline" render={<Link to="/apply/staff" />}>Request staff account</Button></div>
+    <p className="auth-footnote"><img src={shield} alt="" />You’ll see only the pages your role has access to.</p>
   </section>
 }

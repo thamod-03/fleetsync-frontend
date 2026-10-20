@@ -2,6 +2,7 @@ import { demoDatasetSchema, type DemoDataset } from '../types/domain.ts'
 
 // All identities, registrations, companies and transactions are fictional.
 const seed: DemoDataset = {
+  customerRegistrations: [], staffApplications: [], loginAttempts: [],
   users: [
     { id: 'user-admin', name: 'Alex Silva', email: 'alex@fleetsync.example', role: 'admin' },
     { id: 'user-customer', name: 'Maya Fernando', email: 'maya@harbor.example', role: 'customer' },

@@ -1,0 +1,14 @@
+import type { ServiceAdapter } from './contracts.ts'
+
+const unavailable = async () => ({ ok: false as const, error: 'This service is currently unavailable. Please try again later.' })
+
+// Production fails closed until a real server-backed adapter is implemented.
+// No local session, fixture credential, or mock fallback is consulted here.
+export const unavailableAdapter: ServiceAdapter = {
+  services: {
+    login: unavailable, logout: async () => {}, requestPasswordReset: unavailable,
+    resetPassword: unavailable, registerCustomer: unavailable, submitStaffApplication: unavailable,
+    prepareDocuments: unavailable, getDashboard: unavailable, getResetContext: () => ({}),
+  },
+  getCurrentUser: () => null, getStorageNotice: () => null, subscribe: () => () => {},
+}

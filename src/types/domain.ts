@@ -10,9 +10,21 @@ export type TripStatus = (typeof tripStatuses)[number]
 const id = z.string().min(1)
 const timestamp = z.iso.datetime()
 const record = { id }
-export const userSchema = z.object({ ...record, name: z.string().min(1), email: z.email(), role: z.enum(userRoles) })
-export const customerCompanySchema = z.object({ ...record, name: z.string().min(1) })
-export const customerSchema = z.object({ ...record, userId: id, companyId: id })
+export const staffRoles = ['driver', 'mechanic', 'coordinator'] as const
+export const demoDocumentSchema = z.object({
+  kind: z.enum(['nic', 'driving-licence']), name: z.string().min(1),
+  sizeBytes: z.number().positive().max(5 * 1024 * 1024),
+  format: z.enum(['pdf', 'jpg']), simulated: z.literal(true),
+})
+export const userSchema = z.object({ ...record, name: z.string().min(1), email: z.email(), role: z.enum(userRoles), accountStatus: z.enum(['Pending', 'Active']).optional() })
+export const customerCompanySchema = z.object({ ...record, name: z.string().min(1), businessRegistrationNumber: z.string().optional(), billingAddress: z.string().optional() })
+export const customerSchema = z.object({ ...record, userId: id, companyId: id, mobile: z.string().optional() })
+export const customerRegistrationSchema = z.object({ ...record, customerId: id, status: z.literal('Pending'), createdAt: timestamp })
+export const staffSubmissionSchema = z.object({
+  ...record, fullName: z.string(), nicNumber: z.string().min(1), email: z.email(), mobile: z.string(),
+  role: z.enum(staffRoles), documents: z.array(demoDocumentSchema), status: z.literal('Pending'), createdAt: timestamp,
+})
+export const loginAttemptSchema = z.object({ ...record, failures: z.number().int().nonnegative().max(5), lockedUntil: z.number().nonnegative() })
 const resource = { ...record, available: z.boolean() }
 export const vehicleSchema = z.object({ ...resource, registration: z.string().min(1), description: z.string().min(1) })
 export const driverSchema = z.object({ ...resource, userId: id })
@@ -46,6 +58,9 @@ const datasetShape = z.object({
   orders: z.array(transportOrderSchema), quotations: z.array(fareQuotationSchema), trips: z.array(tripSchema),
   payments: z.array(paymentSchema), notifications: z.array(notificationSchema),
   chatMessages: z.array(chatMessageSchema), auditEvents: z.array(auditEventSchema),
+  customerRegistrations: z.array(customerRegistrationSchema).default([]),
+  staffApplications: z.array(staffSubmissionSchema).default([]),
+  loginAttempts: z.array(loginAttemptSchema).default([]),
 })
 
 export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
@@ -54,6 +69,8 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
     if (new Set(records.map((item) => item.id)).size !== records.length) invalid('Duplicate record IDs')
   }
   const userHasRole = (userId: string, role: UserRole) => data.users.some((user) => user.id === userId && user.role === role)
+  if (new Set(data.users.map((user) => user.email.toLowerCase())).size !== data.users.length) invalid('Duplicate user emails')
+  if (data.customerRegistrations.some((registration) => !data.customers.some((customer) => customer.id === registration.customerId && data.users.some((user) => user.id === customer.userId && user.accountStatus === 'Pending')))) invalid('Invalid pending registration')
   for (const customer of data.customers) {
     if (!userHasRole(customer.userId, 'customer') || !data.customerCompanies.some((company) => company.id === customer.companyId)) invalid('Invalid customer relationship')
   }
@@ -101,3 +118,6 @@ export type Notification = z.infer<typeof notificationSchema>
 export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type AuditEvent = z.infer<typeof auditEventSchema>
 export type DemoDataset = z.infer<typeof demoDatasetSchema>
+export type CustomerRegistration = z.infer<typeof customerRegistrationSchema>
+export type StaffApplication = z.infer<typeof staffSubmissionSchema>
+export type DemoDocument = z.infer<typeof demoDocumentSchema>

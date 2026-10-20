@@ -8,8 +8,8 @@ export interface StoragePort {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
 }
-export interface DemoSnapshot { data: DemoDataset; sessionUserId: string | null }
-const savedSchema = z.object({ version: z.literal(1), data: demoDatasetSchema, sessionUserId: z.string().nullable() })
+export interface DemoSnapshot { data: DemoDataset; sessionUserId: string | null; rememberSession?: boolean }
+const savedSchema = z.object({ version: z.literal(1), data: demoDatasetSchema, sessionUserId: z.string().nullable(), rememberSession: z.boolean().optional() })
 
 export function browserStorage(): StoragePort {
   return {
@@ -23,10 +23,10 @@ export function loadSnapshot(storage: StoragePort): DemoSnapshot & { storageNoti
     const raw = storage.getItem(DEMO_STORAGE_KEY)
     if (raw === null) return { data: createSeedData(), sessionUserId: null, storageNotice: null }
     const saved = savedSchema.parse(JSON.parse(raw))
-    const session = saved.data.users.find((user) => user.id === saved.sessionUserId && webRoles.some((role) => role === user.role))
-    return { data: saved.data, sessionUserId: session?.id ?? null, storageNotice: null }
+    const session = saved.data.users.find((user) => user.id === saved.sessionUserId && user.accountStatus !== 'Pending' && webRoles.some((role) => role === user.role))
+    return { data: saved.data, sessionUserId: saved.rememberSession === false ? null : session?.id ?? null, rememberSession: saved.rememberSession, storageNotice: null }
   } catch {
-    return { data: createSeedData(), sessionUserId: null, storageNotice: 'Saved demo data was unavailable or invalid. The fictional starting dataset has been restored.' }
+    return { data: createSeedData(), sessionUserId: null, storageNotice: 'Saved data could not be restored. Starting data has been restored.' }
   }
 }
 

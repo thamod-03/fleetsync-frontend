@@ -6,14 +6,14 @@ export interface DemoState extends DemoSnapshot { storageNotice: string | null }
 export function createDemoStore(storage: StoragePort = browserStorage()) {
   const store = createStore<DemoState>(() => loadSnapshot(storage))
   const persist = () => {
-    const { data, sessionUserId } = store.getState()
+    const { data, sessionUserId, rememberSession } = store.getState()
     const message = 'Browser storage is unavailable. Changes will last only for this open page.'
-    if (!saveSnapshot(storage, { data, sessionUserId }) && store.getState().storageNotice !== message) {
+    if (!saveSnapshot(storage, { data, sessionUserId: rememberSession === false ? null : sessionUserId, rememberSession }) && store.getState().storageNotice !== message) {
       store.setState({ storageNotice: message })
     }
   }
   store.subscribe((state, previous) => {
-    if (state.data !== previous.data || state.sessionUserId !== previous.sessionUserId) persist()
+    if (state.data !== previous.data || state.sessionUserId !== previous.sessionUserId || state.rememberSession !== previous.rememberSession) persist()
   })
   persist()
   return store

@@ -2,8 +2,10 @@ import { z } from 'zod'
 import { createSeedData } from './seed.ts'
 import { demoStore, type DemoStore } from '../store/demo-store.ts'
 import { assignmentSchema, type Trip, type WebRole } from '../types/domain.ts'
+import { createAuthServices } from './auth-services.ts'
+import type { ServiceResult } from '../services/contracts.ts'
+export type { ServiceResult } from '../services/contracts.ts'
 
-export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string }
 const tripInputSchema = z.object({ orderId: z.string().min(1), assignment: assignmentSchema })
 export type CreateTripInput = z.infer<typeof tripInputSchema>
 
@@ -15,11 +17,12 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
   }
   const failure = (error: string): { ok: false; error: string } => ({ ok: false, error })
   return {
+    ...createAuthServices(store, delayMs),
     async signIn(role: WebRole) {
       await wait()
-      const user = store.getState().data.users.find((item) => item.role === role)
+      const user = store.getState().data.users.find((item) => item.role === role && item.accountStatus !== 'Pending')
       if (!user) return failure('This demo persona is unavailable. Reset demo data to restore it.')
-      store.setState({ sessionUserId: user.id })
+      store.setState({ sessionUserId: user.id, rememberSession: true })
       return { ok: true as const, data: user }
     },
     async logout() {
