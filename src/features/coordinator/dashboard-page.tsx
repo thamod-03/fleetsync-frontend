@@ -8,7 +8,7 @@ import { CoordinatorCard, StatusBadge } from './coordinator-components'
 import { money, orderStatus } from './coordinator-format'
 import { useCoordinatorQuery } from './use-coordinator-query'
 
-const later = 'Currently unavailable'
+
 
 export function CoordinatorDashboardPage() {
   const user = useDemoUser()
@@ -34,7 +34,7 @@ export function CoordinatorDashboard({ data, name }: { data: CoordinatorOverview
     { label: 'Drivers available', value: drivers.length, meta: `of ${data.drivers.length} drivers`, icon: Users, tone: 'success' },
   ]
   return <div className="coord-page">
-    <div className="coord-page-heading"><div><h1>{greeting}, {name}</h1><p>{waiting.length} {waiting.length === 1 ? 'order needs' : 'orders need'} a fare quotation.</p></div><div className="coord-actions"><button className="coord-button secondary" disabled title={later}>Generate report</button><Link className="coord-button" to="/coordinator/trips/create"><Plus size={16} />Create trip</Link></div></div>
+    <div className="coord-page-heading"><div><h1>{greeting}, {name}</h1><p>{waiting.length} {waiting.length === 1 ? 'order needs' : 'orders need'} a fare quotation.</p></div><div className="coord-actions"><Link className="coord-button secondary" to="/coordinator/reports">Generate report</Link><Link className="coord-button" to="/coordinator/trips/create"><Plus size={16} />Create trip</Link></div></div>
     <div className="coord-kpis">{kpis.map(({ label, value, meta, icon: Icon, tone }) => <section key={label} className="coord-kpi"><span className={`coord-icon coord-badge-${tone}`}><Icon size={20} aria-hidden="true" /></span><div><h2>{label}</h2><strong>{value}</strong><p>{meta}</p></div></section>)}</div>
     <div className="coord-middle-grid">
       <CoordinatorCard title="Orders waiting for you" subtitle="Newest first" action={<Link className="coord-link" to="/coordinator/orders">All orders</Link>}>
@@ -45,7 +45,7 @@ export function CoordinatorDashboard({ data, name }: { data: CoordinatorOverview
     <div className="coord-bottom-grid">
       <CoordinatorCard title="Availability today" subtitle="Checked before a trip is assigned" action={<Link className="coord-link" to="/coordinator/availability">Check availability</Link>}><div className="coord-card-body">{[{ label: 'Vehicles', free: vehicles.length, total: data.vehicles.length, description: vehicles.map((v) => v.description).join(' · ') }, { label: 'Drivers', free: drivers.length, total: data.drivers.length, description: `${data.mechanics.filter((m) => m.available).length} mechanics available` }].map((item) => <div className="coord-availability" key={item.label}><div><span>{item.label}</span><strong>{item.free} of {item.total} free</strong></div><meter aria-label={`${item.label} available`} min={0} max={item.total || 1} value={item.free} /><p>{item.description || 'None available'}</p></div>)}</div></CoordinatorCard>
       <CoordinatorCard title="Order payments" subtitle="All recorded orders" action={<Link className="coord-link" to="/coordinator/orders">View all</Link>}><div className="coord-card-body">{['Paid', 'Awaiting payment', 'Payment failed'].map((status) => { const orders = data.orders.filter((item) => orderStatus(item) === status); const amount = orders.reduce((sum, item) => sum + (status === 'Awaiting payment' ? item.quotations.filter((quote) => quote.status === 'Accepted').reduce((a, q) => a + q.amount, 0) : item.payments.filter((payment) => payment.status === (status === 'Paid' ? 'Succeeded' : 'Failed')).reduce((a, p) => a + p.amount, 0)), 0); return <div className="coord-payment-row" key={status}><StatusBadge>{status}</StatusBadge><span>{orders.length} {orders.length === 1 ? 'order' : 'orders'}</span><span className="coord-mono">{money(amount)}</span></div> })}</div></CoordinatorCard>
-      <CoordinatorCard title="Operational report" subtitle="Trips, distance and on-time rate"><div className="coord-card-body"><p>No operational report generated.</p><div className="coord-actions"><button className="coord-button secondary small" disabled title={later}>Generate</button><button className="coord-button secondary small" disabled title={later}>Export</button></div></div></CoordinatorCard>
+      <CoordinatorCard title="Operational report" subtitle="Trips, distance and recorded payments"><div className="coord-card-body"><p>Generate a report from current operational records.</p><div className="coord-actions"><Link className="coord-button secondary small" to="/coordinator/reports">Generate</Link><Link className="coord-button secondary small" to="/coordinator/reports">Export</Link></div></div></CoordinatorCard>
     </div>
   </div>
 }

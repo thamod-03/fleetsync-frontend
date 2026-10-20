@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { fareChargesSchema, totalFare } from './quotation.ts'
 import { holdsTripResources } from './trip-policy.ts'
+import { conversationSchema, mailMessageSchema } from './communications.ts'
+import { reportExportSchema } from './reporting.ts'
 
 export const userRoles = ['admin', 'customer', 'coordinator', 'driver', 'mechanic'] as const
 export const webRoles = ['admin', 'customer', 'coordinator'] as const
@@ -63,7 +65,7 @@ export const paymentSchema = z.object({
   status: z.enum(['Pending', 'Succeeded', 'Failed']), simulated: z.literal(true),
 })
 export const notificationSchema = z.object({ ...record, userId: id, message: z.string(), read: z.boolean(), createdAt: timestamp, simulated: z.literal(true), tripId: id.optional(), channel: z.literal('Push').optional(), deliveryState: z.literal('Queued locally').optional() })
-export const chatMessageSchema = z.object({ ...record, senderId: id, recipientId: id, text: z.string(), createdAt: timestamp, simulated: z.literal(true) })
+export const chatMessageSchema = z.object({ ...record, senderId: id, recipientId: id, text: z.string(), createdAt: timestamp, simulated: z.literal(true), conversationId: id.optional(), orderId: id.optional(), readBy: z.array(id).default([]), deliveryState: z.literal('Stored locally').optional() })
 export const auditEventSchema = z.object({ ...record, actorId: id, action: z.string(), entityId: id, createdAt: timestamp })
 
 const datasetShape = z.object({
@@ -75,6 +77,9 @@ const datasetShape = z.object({
   customerRegistrations: z.array(customerRegistrationSchema).default([]),
   staffApplications: z.array(staffSubmissionSchema).default([]),
   loginAttempts: z.array(loginAttemptSchema).default([]),
+  conversations: z.array(conversationSchema).default([]),
+  mailMessages: z.array(mailMessageSchema).default([]),
+  reportExports: z.array(reportExportSchema).default([]),
 })
 
 export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
@@ -117,6 +122,23 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
     }
   }
   const knownUser = (userId: string) => data.users.some((user) => user.id === userId)
+  for (const conversation of data.conversations) {
+    if (!data.orders.some((order) => order.id === conversation.orderId) || !userHasRole(conversation.coordinatorId, 'coordinator') || !knownUser(conversation.participantId) || conversation.coordinatorId === conversation.participantId) invalid('Invalid conversation relationship')
+  }
+  if (new Set(data.conversations.map((item) => JSON.stringify([item.orderId, item.coordinatorId, item.participantId]))).size !== data.conversations.length) invalid('Duplicate order conversation')
+  for (const message of data.chatMessages) {
+    if (message.conversationId) {
+      const conversation = data.conversations.find((item) => item.id === message.conversationId)
+      if (!conversation || message.orderId !== conversation.orderId || ![conversation.coordinatorId, conversation.participantId].includes(message.senderId) || ![conversation.coordinatorId, conversation.participantId].includes(message.recipientId) || message.senderId === message.recipientId) invalid('Invalid chat relationship')
+    }
+    if (message.readBy.some((userId) => userId !== message.senderId && userId !== message.recipientId)) invalid('Invalid message reader')
+  }
+  for (const mail of data.mailMessages) {
+    const participants = [mail.senderId, ...mail.recipientIds]
+    if (participants.some((userId) => !data.users.some((user) => user.id === userId && ['admin', 'coordinator'].includes(user.role))) || new Set(mail.recipientIds).size !== mail.recipientIds.length || (mail.status !== 'Draft' && !mail.recipientIds.length) || [...mail.readBy, ...mail.starredBy, ...mail.trashedBy].some((userId) => !participants.includes(userId))) invalid('Invalid internal mail participants')
+    if ([mail.replyToId, mail.forwardedFromId].some((mailId) => mailId && !data.mailMessages.some((item) => item.id === mailId))) invalid('Unknown related mail')
+  }
+  if (data.reportExports.some((entry) => !userHasRole(entry.actorId, 'coordinator'))) invalid('Invalid report export actor')
   if (data.notifications.some((item) => item.tripId && !data.trips.some((trip) => trip.id === item.tripId))) invalid('Unknown notification trip')
   if (data.notifications.some((item) => !knownUser(item.userId)) ||
     data.chatMessages.some((item) => !knownUser(item.senderId) || !knownUser(item.recipientId)) ||

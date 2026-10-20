@@ -16,6 +16,9 @@ import { CreateTripPage } from '../features/coordinator/create-trip-page'
 import { TripAssignedPage } from '../features/coordinator/trip-assigned-page'
 import { TripListPage } from '../features/coordinator/trip-list-page'
 import { TripDetailsPage } from '../features/coordinator/trip-details-page'
+import { ReportsPage } from '../features/coordinator/reports-page'
+import { ChatPage } from '../features/coordinator/chat-page'
+import { MailPage } from '../features/coordinator/mail-page'
 import { RoleGuard } from './role-guard'
 import { HomeRedirect, RouteErrorPage, SystemPage } from './system-pages'
 
@@ -42,6 +45,9 @@ export const routes: RouteObject[] = [{
       { path: 'orders', element: <SubmittedOrdersPage /> },
       { path: 'orders/:orderId', element: <ReviewOrderPage /> },
       { path: 'availability', element: <AvailabilityPage /> },
+      { path: 'reports', element: <ReportsPage /> },
+      { path: 'chat', element: <ChatPage /> },
+      { path: 'mail', element: <MailPage /> },
       { path: 'trips/create', element: <CreateTripPage /> },
       { path: 'trips', element: <TripListPage /> },
       { path: 'trips/:tripId', element: <TripDetailsPage /> },

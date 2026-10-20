@@ -26,6 +26,16 @@ export const subscribeApplication = (listener: () => void) => {
 }
 
 export const applicationServices: ApplicationServices = {
+  getReportContext: async () => { await initialization; return adapter.services.getReportContext() },
+  generateReport: async (input) => { await initialization; return adapter.services.generateReport(input) },
+  recordReportExport: async (report, format) => { await initialization; return adapter.services.recordReportExport(report, format) },
+  getChatWorkspace: async () => { await initialization; return adapter.services.getChatWorkspace() },
+  getConversation: async (id) => { await initialization; return adapter.services.getConversation(id) },
+  sendChatMessage: async (input) => { await initialization; return adapter.services.sendChatMessage(input) },
+  markConversationRead: async (id) => { await initialization; return adapter.services.markConversationRead(id) },
+  getMailbox: async () => { await initialization; return adapter.services.getMailbox() },
+  saveMail: async (input, draft) => { await initialization; return adapter.services.saveMail(input, draft) },
+  setMailFlag: async (id, flag, enabled) => { await initialization; return adapter.services.setMailFlag(id, flag, enabled) },
   getTrips: async () => { await initialization; return adapter.services.getTrips() },
   getTripDetails: async (id) => { await initialization; return adapter.services.getTripDetails(id) },
   cancelTrip: async (input) => { await initialization; return adapter.services.cancelTrip(input) },
