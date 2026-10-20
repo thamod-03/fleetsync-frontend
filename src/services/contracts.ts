@@ -3,12 +3,19 @@ import type { DemoDocument, User, WebRole } from '../types/domain.ts'
 import type { CoordinatorOverview, OrderDetails } from '../types/coordinator.ts'
 import type { QuotationInput } from '../types/quotation.ts'
 import type { FareQuotation } from '../types/domain.ts'
+import type { Trip } from '../types/domain.ts'
+import type { CreateTripInput, ResourceAvailability, TripAssignmentContext, TripAssignmentDetails } from '../types/trip-assignment.ts'
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string }
 export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getAvailability(): Promise<ServiceResult<ResourceAvailability>>
+  getTripAssignmentContext(): Promise<ServiceResult<TripAssignmentContext>>
+  getAssignedTrip(tripId: string): Promise<ServiceResult<TripAssignmentDetails>>
+  createTrip(input: CreateTripInput): Promise<ServiceResult<Trip>>
+  requeueTripNotification(tripId: string, userId: string): Promise<ServiceResult<{ message: string }>>
   getCoordinatorOverview(): Promise<ServiceResult<CoordinatorOverview>>
   getSubmittedOrders(): Promise<ServiceResult<OrderDetails[]>>
   getOrder(orderId: string): Promise<ServiceResult<OrderDetails>>

@@ -27,13 +27,14 @@ export const staffSubmissionSchema = z.object({
 })
 export const loginAttemptSchema = z.object({ ...record, failures: z.number().int().nonnegative().max(5), lockedUntil: z.number().nonnegative() })
 const resource = { ...record, available: z.boolean() }
-export const vehicleSchema = z.object({ ...resource, registration: z.string().min(1), description: z.string().min(1) })
-export const driverSchema = z.object({ ...resource, userId: id })
-export const mechanicSchema = z.object({ ...resource, userId: id })
+export const vehicleSchema = z.object({ ...resource, registration: z.string().min(1), description: z.string().min(1), capacityTonnes: z.number().positive().optional(), homeBase: z.string().optional(), nextServiceKm: z.number().nonnegative().optional(), inMaintenance: z.boolean().optional() })
+export const driverSchema = z.object({ ...resource, userId: id, licence: z.string().optional() })
+export const mechanicSchema = z.object({ ...resource, userId: id, speciality: z.string().optional(), workshop: z.string().optional() })
 export const transportOrderSchema = z.object({
   ...record, customerId: id, origin: z.string().min(1), destination: z.string().min(1),
   cargo: z.string().min(1), createdAt: timestamp,
   pickupAt: timestamp.optional(), deliveryInstructions: z.string().optional(),
+  estimatedReturnAt: timestamp.optional(),
   distanceKm: z.number().positive().optional(), weightTonnes: z.number().positive().optional(),
   pallets: z.string().optional(), handling: z.string().optional(), customerNote: z.string().optional(),
   status: z.enum(['Draft', 'Submitted', 'Quoted', 'Accepted', 'Declined']),
@@ -45,7 +46,9 @@ export const fareQuotationSchema = z.object({
   validUntil: timestamp.optional(), message: z.string().optional(), createdAt: timestamp.optional(),
 })
 export const assignmentSchema = z.object({ vehicleId: id, driverId: id, mechanicId: id })
-const tripBase = z.object({ ...record, orderId: id, assignment: assignmentSchema })
+const tripBase = z.object({ ...record, orderId: id, assignment: assignmentSchema,
+  scheduledStart: timestamp.optional(), scheduledEnd: timestamp.optional(), createdAt: timestamp.optional(), createdBy: id.optional(),
+})
 export const tripSchema = z.discriminatedUnion('status', [
   tripBase.extend({ status: z.enum(['Draft', 'Assigned', 'In Progress', 'Cancelled']) }),
   tripBase.extend({ status: z.literal('Completed'), actualReturnDate: timestamp, finalOdometer: z.number().nonnegative() }),
@@ -54,7 +57,7 @@ export const paymentSchema = z.object({
   ...record, quotationId: id, amount: z.number().nonnegative(), currency: z.literal('LKR'),
   status: z.enum(['Pending', 'Succeeded', 'Failed']), simulated: z.literal(true),
 })
-export const notificationSchema = z.object({ ...record, userId: id, message: z.string(), read: z.boolean(), createdAt: timestamp, simulated: z.literal(true) })
+export const notificationSchema = z.object({ ...record, userId: id, message: z.string(), read: z.boolean(), createdAt: timestamp, simulated: z.literal(true), tripId: id.optional(), channel: z.literal('Push').optional(), deliveryState: z.literal('Queued locally').optional() })
 export const chatMessageSchema = z.object({ ...record, senderId: id, recipientId: id, text: z.string(), createdAt: timestamp, simulated: z.literal(true) })
 export const auditEventSchema = z.object({ ...record, actorId: id, action: z.string(), entityId: id, createdAt: timestamp })
 
@@ -95,6 +98,8 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
   const occupied = { vehicleId: new Set<string>(), driverId: new Set<string>(), mechanicId: new Set<string>() }
   for (const trip of data.trips) {
     if (!data.orders.some((order) => order.id === trip.orderId)) invalid('Unknown trip order')
+    if (!!trip.scheduledStart !== !!trip.scheduledEnd || (trip.scheduledStart && trip.scheduledEnd && Date.parse(trip.scheduledEnd) <= Date.parse(trip.scheduledStart))) invalid('Invalid trip window')
+    if (trip.createdBy && !userHasRole(trip.createdBy, 'coordinator')) invalid('Invalid trip creator')
     for (const [key, resources] of [['vehicleId', data.vehicles], ['driverId', data.drivers], ['mechanicId', data.mechanics]] as const) {
       const resource = resources.find((item) => item.id === trip.assignment[key])
       if (!resource) invalid('Unknown assigned resource')
@@ -105,6 +110,7 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
     }
   }
   const knownUser = (userId: string) => data.users.some((user) => user.id === userId)
+  if (data.notifications.some((item) => item.tripId && !data.trips.some((trip) => trip.id === item.tripId))) invalid('Unknown notification trip')
   if (data.notifications.some((item) => !knownUser(item.userId)) ||
     data.chatMessages.some((item) => !knownUser(item.senderId) || !knownUser(item.recipientId)) ||
     data.auditEvents.some((item) => !knownUser(item.actorId))) invalid('Unknown message or audit user')

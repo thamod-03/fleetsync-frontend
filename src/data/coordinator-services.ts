@@ -1,3 +1,4 @@
+import { projectOrders } from './order-projections.ts'
 import type { DemoStore } from '../store/demo-store.ts'
 import type { OrderDetails, CoordinatorOverview } from '../types/coordinator.ts'
 import type { ServiceResult } from '../services/contracts.ts'
@@ -10,22 +11,7 @@ export function createCoordinatorServices(store: DemoStore, delayMs: number, not
   const wait = () => new Promise<void>((resolve) => setTimeout(resolve, delayMs))
   const denied = () => ({ ok: false as const, error: 'You do not have permission to view operational records.' })
   const actor = () => store.getState().data.users.find((user) => user.id === store.getState().sessionUserId && user.accountStatus !== 'Pending')
-  const details = (): OrderDetails[] => {
-    const data = store.getState().data
-    return data.orders.filter((order) => order.status !== 'Draft').flatMap((order) => {
-      const customer = data.customers.find((item) => item.id === order.customerId)
-      const company = data.customerCompanies.find((item) => item.id === customer?.companyId)
-      const contact = data.users.find((item) => item.id === customer?.userId)
-      if (!customer || !company || !contact) return []
-      const quotations = data.quotations.filter((quote) => quote.orderId === order.id)
-      return [{ order, customer, company, contact, quotations,
-        trips: data.trips.filter((trip) => trip.orderId === order.id),
-        customerOrderCount: data.orders.filter((item) => item.customerId === customer.id && item.status !== 'Draft').length,
-        vehicleTypes: [...new Set(['Heavy truck · up to 9 t', ...data.vehicles.map((vehicle) => vehicle.description)])],
-        payments: data.payments.filter((payment) => quotations.some((quote) => quote.id === payment.quotationId)),
-      }]
-    }).sort((a, b) => b.order.createdAt.localeCompare(a.order.createdAt))
-  }
+  const details = () => projectOrders(store.getState().data)
   return {
     async getSubmittedOrders(): Promise<ServiceResult<OrderDetails[]>> {
       await wait()

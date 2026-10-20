@@ -95,3 +95,21 @@ The read-only Figma references are `121:3930`, `122:4080` and `123:4232`. Review
 For a local check, choose Operational Coordinator at `/__development`, open Submitted orders, and prepare a quote for `order-002`. Select a vehicle type, enter charges and a future validity time, then Save draft. Refresh and reopen the order; the draft should remain. Send quotation and verify the order moves to Quoted and the displayed confirmation does not claim email delivery. Existing Authentication and production fail-closed behavior are unchanged.
 
 `npm test` covers retrieval/ownership, filtering, fare validation, draft/publication persistence, duplicate/concurrent operations, notifications, reload/reset, role guards and server-rendered page markup. Rendered 1440px comparison, keyboard/mobile operation and native CSV download remain manual checks. See `docs/ASSUMPTIONS.md` for provisional business rules, legacy-data behavior, unavailable maintenance data and remaining visual differences.
+
+## Coordinator Batch 02A — Trip Assignment
+
+New routes follow these read-only Figma frames:
+
+| Screen | Node | Route |
+| --- | --- | --- |
+| Availability | 141:4873 | /coordinator/availability |
+| Create trip | 124:4326 | /coordinator/trips/create?orderId=order-002 |
+| Trip assigned | 130:4437 | /coordinator/trips/:tripId/assigned |
+
+Availability shows the shared vehicle schedule, resource counts, capacity/status filters and staff cards. Create trip selects a shared order and requires vehicle, driver and mechanic, with a start/return window and assignment summary. Saving rechecks resources and active-order assignments after latency, then commits the Assigned trip, all three reservations, audit entry and local staff notifications together. Confirmation supports refresh and requeuing local notices. Existing assignment links reopen this confirmation, not a new Trip Details feature.
+
+The existing conservative reservation rule remains: an active trip reserves its resources until a future approved release operation. Time controls shade the schedule but do not release active reservations for a different date. Payment prerequisites, lifetime order/trip uniqueness, capacity/licence eligibility and date-aware reuse still require confirmation. No new payment or automatic licence/capacity gate is imposed. Full Trips, Trip Details, cancellation and reports are not implemented.
+
+Local check: select Coordinator at `/__development`, open Create trip, choose `order-002`, confirm its window, select the available vehicle/driver/mechanic, then Assign & create trip. Refresh the confirmation and open Availability to see the reservations. Reset Demo Data restores the original availability. For an older persisted dataset, enter missing trip times or reset explicitly to load enriched optional fixture metadata.
+
+Assignment notices are queued locally; no actual push notification or email is delivered. Production remains fail-closed and excludes the local trip services and fixture utilities. Tests cover assignment validation, conflicts, duplicates/concurrency, relationships, persistence/reset, query access, truthful notification status, routes and rendered forms, alongside Authentication and quotation regression tests. Browser visual and keyboard/mobile checks remain manual.

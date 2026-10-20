@@ -11,6 +11,9 @@ import { CustomerDashboardPage } from '../features/customer/dashboard-page'
 import { CoordinatorDashboardPage } from '../features/coordinator/dashboard-page'
 import { SubmittedOrdersPage } from '../features/coordinator/submitted-orders-page'
 import { ReviewOrderPage } from '../features/coordinator/review-order-page'
+import { AvailabilityPage } from '../features/coordinator/availability-page'
+import { CreateTripPage } from '../features/coordinator/create-trip-page'
+import { TripAssignedPage } from '../features/coordinator/trip-assigned-page'
 import { RoleGuard } from './role-guard'
 import { HomeRedirect, RouteErrorPage, SystemPage } from './system-pages'
 
@@ -36,6 +39,9 @@ export const routes: RouteObject[] = [{
       { index: true, element: <CoordinatorDashboardPage /> },
       { path: 'orders', element: <SubmittedOrdersPage /> },
       { path: 'orders/:orderId', element: <ReviewOrderPage /> },
+      { path: 'availability', element: <AvailabilityPage /> },
+      { path: 'trips/create', element: <CreateTripPage /> },
+      { path: 'trips/:tripId/assigned', element: <TripAssignedPage /> },
       { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { path: '/unauthorized', element: <SystemPage kind="unauthorized" /> },
