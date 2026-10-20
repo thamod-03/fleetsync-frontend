@@ -3,6 +3,7 @@ import { createSeedData } from './seed.ts'
 import { demoStore, type DemoStore } from '../store/demo-store.ts'
 import { assignmentSchema, type Trip, type WebRole } from '../types/domain.ts'
 import { createAuthServices } from './auth-services.ts'
+import { createCoordinatorServices } from './coordinator-services.ts'
 import type { ServiceResult } from '../services/contracts.ts'
 export type { ServiceResult } from '../services/contracts.ts'
 
@@ -18,6 +19,7 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
   const failure = (error: string): { ok: false; error: string } => ({ ok: false, error })
   return {
     ...createAuthServices(store, delayMs),
+    ...createCoordinatorServices(store, delayMs),
     async signIn(role: WebRole) {
       await wait()
       const user = store.getState().data.users.find((item) => item.role === role && item.accountStatus !== 'Pending')
@@ -45,7 +47,7 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
       const orderIds = new Set(orders.map((order) => order.id))
       return { ok: true as const, data: {
         orders: orders.length,
-        quotations: data.quotations.filter((quote) => orderIds.has(quote.orderId)).length,
+        quotations: data.quotations.filter((quote) => orderIds.has(quote.orderId) && (user.role !== 'customer' || quote.status !== 'Draft')).length,
         trips: data.trips.filter((trip) => orderIds.has(trip.orderId)).length,
         notifications: data.notifications.filter((item) => item.userId === user.id && !item.read).length,
       } }

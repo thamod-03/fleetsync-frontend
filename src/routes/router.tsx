@@ -9,6 +9,8 @@ import { ResetPasswordPage } from '../features/auth/reset-password-page'
 import { AdminDashboardPage } from '../features/admin/dashboard-page'
 import { CustomerDashboardPage } from '../features/customer/dashboard-page'
 import { CoordinatorDashboardPage } from '../features/coordinator/dashboard-page'
+import { SubmittedOrdersPage } from '../features/coordinator/submitted-orders-page'
+import { ReviewOrderPage } from '../features/coordinator/review-order-page'
 import { RoleGuard } from './role-guard'
 import { HomeRedirect, RouteErrorPage, SystemPage } from './system-pages'
 
@@ -31,7 +33,10 @@ export const routes: RouteObject[] = [{
       { index: true, element: <CustomerDashboardPage /> }, { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { element: <RoleGuard role="coordinator" />, children: [{ path: '/coordinator', element: <AppShell />, children: [
-      { index: true, element: <CoordinatorDashboardPage /> }, { path: '*', element: <SystemPage kind="not-found" /> },
+      { index: true, element: <CoordinatorDashboardPage /> },
+      { path: 'orders', element: <SubmittedOrdersPage /> },
+      { path: 'orders/:orderId', element: <ReviewOrderPage /> },
+      { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { path: '/unauthorized', element: <SystemPage kind="unauthorized" /> },
     { path: '/access-denied', element: <SystemPage kind="unauthorized" /> },

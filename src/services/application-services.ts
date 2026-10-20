@@ -25,6 +25,10 @@ export const subscribeApplication = (listener: () => void) => {
 }
 
 export const applicationServices: ApplicationServices = {
+  getCoordinatorOverview: async () => { await initialization; return adapter.services.getCoordinatorOverview() },
+  getSubmittedOrders: async () => { await initialization; return adapter.services.getSubmittedOrders() },
+  getOrder: async (id) => { await initialization; return adapter.services.getOrder(id) },
+  saveQuotation: async (input, publish) => { await initialization; return adapter.services.saveQuotation(input, publish) },
   login: async (input) => { await initialization; return adapter.services.login(input) },
   logout: async () => { await initialization; return adapter.services.logout() },
   requestPasswordReset: async (input) => { await initialization; return adapter.services.requestPasswordReset(input) },

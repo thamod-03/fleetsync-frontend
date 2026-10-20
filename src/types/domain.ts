@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { fareChargesSchema, totalFare } from './quotation.ts'
 
 export const userRoles = ['admin', 'customer', 'coordinator', 'driver', 'mechanic'] as const
 export const webRoles = ['admin', 'customer', 'coordinator'] as const
@@ -18,7 +19,7 @@ export const demoDocumentSchema = z.object({
 })
 export const userSchema = z.object({ ...record, name: z.string().min(1), email: z.email(), role: z.enum(userRoles), accountStatus: z.enum(['Pending', 'Active']).optional() })
 export const customerCompanySchema = z.object({ ...record, name: z.string().min(1), businessRegistrationNumber: z.string().optional(), billingAddress: z.string().optional() })
-export const customerSchema = z.object({ ...record, userId: id, companyId: id, mobile: z.string().optional() })
+export const customerSchema = z.object({ ...record, userId: id, companyId: id, mobile: z.string().optional(), joinedAt: timestamp.optional() })
 export const customerRegistrationSchema = z.object({ ...record, customerId: id, status: z.literal('Pending'), createdAt: timestamp })
 export const staffSubmissionSchema = z.object({
   ...record, fullName: z.string(), nicNumber: z.string().min(1), email: z.email(), mobile: z.string(),
@@ -32,11 +33,16 @@ export const mechanicSchema = z.object({ ...resource, userId: id })
 export const transportOrderSchema = z.object({
   ...record, customerId: id, origin: z.string().min(1), destination: z.string().min(1),
   cargo: z.string().min(1), createdAt: timestamp,
+  pickupAt: timestamp.optional(), deliveryInstructions: z.string().optional(),
+  distanceKm: z.number().positive().optional(), weightTonnes: z.number().positive().optional(),
+  pallets: z.string().optional(), handling: z.string().optional(), customerNote: z.string().optional(),
   status: z.enum(['Draft', 'Submitted', 'Quoted', 'Accepted', 'Declined']),
 })
 export const fareQuotationSchema = z.object({
   ...record, orderId: id, amount: z.number().nonnegative(), currency: z.literal('LKR'),
-  status: z.enum(['Pending', 'Accepted', 'Declined']),
+  status: z.enum(['Draft', 'Pending', 'Accepted', 'Declined']),
+  vehicleType: z.string().min(1).optional(), charges: fareChargesSchema.optional(),
+  validUntil: timestamp.optional(), message: z.string().optional(), createdAt: timestamp.optional(),
 })
 export const assignmentSchema = z.object({ vehicleId: id, driverId: id, mechanicId: id })
 const tripBase = z.object({ ...record, orderId: id, assignment: assignmentSchema })
@@ -84,6 +90,7 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
   }
   if (data.orders.some((order) => !data.customers.some((customer) => customer.id === order.customerId))) invalid('Unknown order customer')
   if (data.quotations.some((quote) => !data.orders.some((order) => order.id === quote.orderId))) invalid('Unknown quotation order')
+  if (data.quotations.some((quote) => quote.charges && totalFare(quote.charges) !== quote.amount)) invalid('Quotation total does not match its charges')
   if (data.payments.some((payment) => !data.quotations.some((quote) => quote.id === payment.quotationId))) invalid('Unknown payment quotation')
   const occupied = { vehicleId: new Set<string>(), driverId: new Set<string>(), mechanicId: new Set<string>() }
   for (const trip of data.trips) {

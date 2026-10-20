@@ -1,4 +1,4 @@
-﻿# FleetSync frontend
+# FleetSync frontend
 
 FleetSync is the frontend of the final Fleet Management System, developed incrementally from the approved Figma screens and system diagrams. React 19, TypeScript, Vite, Tailwind v4, shadcn Base UI/Nova, React Router and Zustand remain the established stack.
 
@@ -80,3 +80,18 @@ Document selection validates file extensions/MIME types and the 5 MB limit. The 
 The artifact builds successfully but is not a deployed authentication system. Implement a server-backed adapter with server-side authentication/authorization, secure password hashing and session management, recovery-token generation/delivery/expiry, password history and session revocation, approval workflows, published terms/consent, and secure document storage/validation. Replace localStorage business persistence with authenticated APIs. Frontend role guards and mock lockout are not security controls.
 
 Unresolved business policies and Figma differences are recorded in `docs/ASSUMPTIONS.md`. No external services, backend, Git commit, push or deployment are added by this task.
+## Coordinator Batch 01
+
+Implemented routes:
+
+- `/coordinator`: Operational dashboard.
+- `/coordinator/orders`: Submitted orders, tabs, search, pickup/payment filters, pagination and CSV export.
+- `/coordinator/orders/:orderId`: Order review and fare estimation, draft persistence, publication and action feedback.
+
+The read-only Figma references are `121:3930`, `122:4080` and `123:4232`. Review and fare estimation share a frame; no separate quotation confirmation frame was supplied. Related dashboard shortcuts and sidebar navigation now open these routes. Other Coordinator screens remain outside Batch 01.
+
+`ApplicationServices` exposes typed order/overview queries and `saveQuotation`. The development adapter stores a quotation breakdown, vehicle type, validity and optional message in the canonical Zustand/localStorage dataset. Saving a draft keeps the order Submitted and hides the draft from Customer queries. Publishing changes the order to Quoted, persists a Pending quotation and adds a local customer notification and audit event. The notification adapter reports emailDelivered=false; the action response explicitly says no email was sent. Future Customer screens can read published quotations through ownership-scoped `getOrder`.
+
+For a local check, choose Operational Coordinator at `/__development`, open Submitted orders, and prepare a quote for `order-002`. Select a vehicle type, enter charges and a future validity time, then Save draft. Refresh and reopen the order; the draft should remain. Send quotation and verify the order moves to Quoted and the displayed confirmation does not claim email delivery. Existing Authentication and production fail-closed behavior are unchanged.
+
+`npm test` covers retrieval/ownership, filtering, fare validation, draft/publication persistence, duplicate/concurrent operations, notifications, reload/reset, role guards and server-rendered page markup. Rendered 1440px comparison, keyboard/mobile operation and native CSV download remain manual checks. See `docs/ASSUMPTIONS.md` for provisional business rules, legacy-data behavior, unavailable maintenance data and remaining visual differences.

@@ -1,4 +1,4 @@
-import { LayoutDashboard, type LucideIcon } from 'lucide-react'
+import { Box, LayoutDashboard, type LucideIcon } from 'lucide-react'
 import type { WebRole } from '../types/domain'
 
 export const roleLabels: Record<WebRole, string> = {
@@ -9,5 +9,5 @@ export interface NavigationItem { label: string; to: string; icon: LucideIcon }
 export const navigation: Record<WebRole, NavigationItem[]> = {
   admin: [{ label: 'Dashboard', to: '/admin', icon: LayoutDashboard }],
   customer: [{ label: 'Dashboard', to: '/customer', icon: LayoutDashboard }],
-  coordinator: [{ label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard }],
+  coordinator: [{ label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard }, { label: 'Submitted orders', to: '/coordinator/orders', icon: Box }],
 }

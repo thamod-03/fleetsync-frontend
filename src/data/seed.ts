@@ -12,8 +12,8 @@ const seed: DemoDataset = {
     { id: 'user-mechanic-1', name: 'Dev Senaka', email: 'dev@fleetsync.example', role: 'mechanic' },
     { id: 'user-mechanic-2', name: 'Anu Jay', email: 'anu@fleetsync.example', role: 'mechanic' },
   ],
-  customerCompanies: [{ id: 'company-harbor', name: 'Harbor Paperworks (Demo)' }],
-  customers: [{ id: 'customer-maya', userId: 'user-customer', companyId: 'company-harbor' }],
+  customerCompanies: [{ id: 'company-harbor', name: 'Harbor Paperworks' }],
+  customers: [{ id: 'customer-maya', userId: 'user-customer', companyId: 'company-harbor', joinedAt: '2025-02-01T00:00:00Z' }],
   vehicles: [
     { id: 'vehicle-1', registration: 'DEMO-001', description: 'Box truck', available: false },
     { id: 'vehicle-2', registration: 'DEMO-002', description: 'Cargo van', available: true },
@@ -22,7 +22,7 @@ const seed: DemoDataset = {
   mechanics: [{ id: 'mechanic-1', userId: 'user-mechanic-1', available: false }, { id: 'mechanic-2', userId: 'user-mechanic-2', available: true }],
   orders: [
     { id: 'order-001', customerId: 'customer-maya', origin: 'Colombo', destination: 'Galle', cargo: 'Paper cartons', status: 'Accepted', createdAt: '2026-10-18T04:00:00Z' },
-    { id: 'order-002', customerId: 'customer-maya', origin: 'Colombo', destination: 'Kandy', cargo: 'Office supplies', status: 'Submitted', createdAt: '2026-10-19T04:00:00Z' },
+    { id: 'order-002', customerId: 'customer-maya', origin: 'Colombo', destination: 'Kandy', cargo: 'Office supplies', status: 'Submitted', createdAt: '2026-10-19T04:00:00Z', pickupAt: '2026-10-24T02:30:00Z', deliveryInstructions: 'Same day, before 15:00', distanceKm: 120, weightTonnes: 2, pallets: '4 pallets', handling: 'Keep dry', customerNote: 'Collection from the warehouse loading bay.' },
   ],
   quotations: [{ id: 'quotation-001', orderId: 'order-001', amount: 24000, currency: 'LKR', status: 'Accepted' }],
   trips: [{ id: 'trip-001', orderId: 'order-001', status: 'Assigned', assignment: { vehicleId: 'vehicle-1', driverId: 'driver-1', mechanicId: 'mechanic-1' } }],
