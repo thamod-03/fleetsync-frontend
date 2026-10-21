@@ -1,3 +1,7 @@
+import { CustomerQuotationsPage, CustomerQuotationPage } from '../features/customer/quotation-page'
+import { CustomerPaymentPage } from '../features/customer/payment-page'
+import { CustomerPaymentResultPage, CustomerInvoicePage } from '../features/customer/payment-result-page'
+import { CustomerPaymentHistoryPage } from '../features/customer/payment-history-page'
 import { Outlet, type RouteObject } from 'react-router'
 import { AppShell } from '../components/layout/app-shell'
 import { AuthLayout } from '../components/layout/auth-layout'
@@ -45,6 +49,13 @@ export const routes: RouteObject[] = [{
       { path: 'orders', element: <CustomerOrdersPage /> },
       { path: 'orders/new', element: <NewCustomerOrderPage /> },
       { path: 'orders/:orderId', element: <CustomerOrderDetailsPage /> },
+      { path: 'quotations', element: <CustomerQuotationsPage /> },
+      { path: 'quotations/:quotationId', element: <CustomerQuotationPage /> },
+      { path: 'quotations/:quotationId/payment', element: <CustomerPaymentPage /> },
+      { path: 'payments', element: <CustomerPaymentHistoryPage /> },
+      { path: 'payments/:paymentId/success', element: <CustomerPaymentResultPage expected="Succeeded" /> },
+      { path: 'payments/:paymentId/failed', element: <CustomerPaymentResultPage expected="Failed" /> },
+      { path: 'payments/:paymentId/invoice', element: <CustomerInvoicePage /> },
       { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { element: <RoleGuard role="coordinator" />, children: [{ path: '/coordinator', element: <AppShell />, children: [

@@ -1,3 +1,5 @@
+import { resetLocalPaymentProvider } from './local-payment-provider.ts'
+import { createCustomerBillingServices } from './customer-billing-services.ts'
 import { createTripServices } from './trip-services.ts'
 import { createTripManagementServices } from './trip-management-services.ts'
 import { createCommunicationServices } from './communication-services.ts'
@@ -26,6 +28,7 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
     ...createCommunicationServices(store, delayMs),
     ...createReportServices(store, delayMs),
     ...createCustomerServices(store, delayMs),
+    ...createCustomerBillingServices(store, delayMs),
     async signIn(role: WebRole) {
       await wait()
       const user = store.getState().data.users.find((item) => item.role === role && item.accountStatus !== 'Pending')
@@ -39,6 +42,7 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
     },
     async resetDemoData() {
       await wait()
+      resetLocalPaymentProvider()
       const data = createSeedData()
       const sessionUserId = data.users.some((user) => user.id === store.getState().sessionUserId) ? store.getState().sessionUserId : null
       store.setState({ data, sessionUserId })

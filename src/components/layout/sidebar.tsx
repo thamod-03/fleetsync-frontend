@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router'
 import { navigation, roleLabels } from '../../routes/navigation'
 import type { NavigationItem } from '../../routes/navigation'
 import type { WebRole } from '../../types/domain'
-import { CreditCard, FileText, LogOut, MessageCircle, UserRound } from 'lucide-react'
+import { LogOut, MessageCircle, UserRound } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { useState } from 'react'
 import { applicationServices } from '../../services/application-services'
@@ -17,10 +17,10 @@ export function Sidebar({ role, items = navigation[role], expanded }: { role: We
   return <aside id="app-navigation" className={`${expanded ? 'block' : 'hidden'} border-b bg-sidebar p-3 md:sticky md:top-0 md:block md:h-svh md:w-[248px] md:shrink-0 md:border-r md:border-b-0`}>
     {styled ? <><div className="coord-brand"><span className="coord-logo"><img src={logo} alt="" /></span><div><strong>Fleet<span>Sync</span></strong><p>{role === 'coordinator' ? 'Coordinator' : 'Customer'}</p></div></div><p className="coord-menu-label">MENU</p></> : <div className="px-2 py-4"><p className="font-semibold">FleetSync</p><p className="mt-1 text-xs text-muted-foreground">{roleLabels[role]}</p></div>}
     <nav aria-label="Primary navigation" className="space-y-1">
-      {items.map(({ label, to, icon: Icon }) => <NavLink end={to === '/coordinator' || role !== 'coordinator'} key={to} to={to} className={({ isActive }) => styled ? `coord-nav-item ${isActive || (to === '/coordinator/trips' && location.pathname.startsWith('/coordinator/trips/')) || (to === '/customer/orders' && location.pathname.startsWith('/customer/orders/') && location.pathname !== '/customer/orders/new') ? 'active' : ''}` : `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground' : 'hover:bg-muted'}`}>
+      {items.map(({ label, to, icon: Icon }) => <NavLink end={to === '/coordinator' || role !== 'coordinator'} key={to} to={to} className={({ isActive }) => styled ? `coord-nav-item ${isActive || (to === '/coordinator/trips' && location.pathname.startsWith('/coordinator/trips/')) || (role === 'customer' && ['/customer/quotations', '/customer/payments'].includes(to) && location.pathname.startsWith(`${to}/`)) || (to === '/customer/orders' && location.pathname.startsWith('/customer/orders/') && location.pathname !== '/customer/orders/new') ? 'active' : ''}` : `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${isActive ? 'bg-sidebar-accent font-semibold text-sidebar-accent-foreground' : 'hover:bg-muted'}`}>
         <Icon aria-hidden="true" className="size-[18px]" />{label}
       </NavLink>)}
-      {role === 'customer' && [{ label: 'Quotations', icon: FileText }, { label: 'Payments', icon: CreditCard }, { label: 'Chat', icon: MessageCircle }].map(({ label, icon: Icon }) => <button className="coord-nav-item" key={label} disabled title="This feature is not available yet."><Icon aria-hidden="true" />{label}</button>)}
+      {role === 'customer' && [{ label: 'Chat', icon: MessageCircle }].map(({ label, icon: Icon }) => <button className="coord-nav-item" key={label} disabled title="This feature is not available yet."><Icon aria-hidden="true" />{label}</button>)}
     </nav>
     {styled ? <div className="coord-nav-footer"><button className="coord-nav-item" disabled title="Currently unavailable"><UserRound aria-hidden="true" />Profile</button><button className="coord-nav-item" onClick={() => void logout()} disabled={busy}><LogOut aria-hidden="true" />Logout</button></div> : <p className="mt-6 px-3 text-xs leading-5 text-muted-foreground">Additional navigation will appear as feature screens are implemented.</p>}
   </aside>

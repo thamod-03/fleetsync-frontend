@@ -26,6 +26,14 @@ export const subscribeApplication = (listener: () => void) => {
 }
 
 export const applicationServices: ApplicationServices = {
+  getCustomerQuotations: async () => { await initialization; return adapter.services.getCustomerQuotations() },
+  getCustomerQuotation: async (id) => { await initialization; return adapter.services.getCustomerQuotation(id) },
+  decideQuotation: async (input) => { await initialization; return adapter.services.decideQuotation(input) },
+  getCustomerPayments: async () => { await initialization; return adapter.services.getCustomerPayments() },
+  getCustomerPayment: async (id) => { await initialization; return adapter.services.getCustomerPayment(id) },
+  getCustomerInvoice: async (id) => { await initialization; return adapter.services.getCustomerInvoice(id) },
+  payQuotation: async (input) => { await initialization; return adapter.services.payQuotation(input) },
+
   getCustomerWorkspace: async () => { await initialization; return adapter.services.getCustomerWorkspace() },
   getCustomerOrder: async (id) => { await initialization; return adapter.services.getCustomerOrder(id) },
   createCustomerOrder: async (input) => { await initialization; return adapter.services.createCustomerOrder(input) },

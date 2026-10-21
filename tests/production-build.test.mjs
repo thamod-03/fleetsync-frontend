@@ -46,7 +46,7 @@ test('production artifacts exclude mock authentication and utilities even with d
           assert.equal(code.includes(forbidden), false, `${environment} build contains ${forbidden}`)
         }
         const modules = chunks.flatMap((chunk) => Object.keys(chunk.modules)).map((path) => path.replaceAll('\\', '/'))
-        for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/customer-services.ts', '/src/data/communication-services.ts', '/src/data/communication-projections.ts', '/src/data/message-notifications.ts', '/src/data/report-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
+        for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/customer-services.ts', '/src/data/customer-billing-services.ts', '/src/data/local-payment-provider.ts', '/src/data/communication-services.ts', '/src/data/communication-projections.ts', '/src/data/message-notifications.ts', '/src/data/report-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
           assert.equal(modules.some((path) => path.includes(forbidden)), false, `${environment} build imports ${forbidden}`)
         }
         assert.ok(code.includes('This service is currently unavailable. Please try again later.'))
@@ -67,7 +67,8 @@ test('opted-in Preview builds include mock services but exclude developer tools 
     const modules = chunks.flatMap((chunk) => Object.keys(chunk.modules)).map((name) => name.replaceAll('\\', '/'))
     assert.ok(modules.some((name) => name.endsWith('/src/data/auth-services.ts')))
     assert.ok(modules.some((name) => name.endsWith('/src/store/demo-store.ts')))
-    for (const forbidden of ['/__development', 'Development utilities', 'Reset Demo Data']) assert.equal(code.includes(forbidden), false)
+    assert.ok(modules.some((name) => name.endsWith('/src/data/local-payment-provider.ts')))
+    for (const forbidden of ['/__development', 'Development utilities', 'Reset Demo Data', 'Fail next local payment']) assert.equal(code.includes(forbidden), false)
     assert.equal(modules.some((name) => name.endsWith('/src/development/tools-page.tsx')), false)
   } finally {
     setEnvironment(originalEnvironment)

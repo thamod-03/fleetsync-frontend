@@ -1,3 +1,4 @@
+import { failNextLocalPayment } from '../data/local-payment-provider'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Button } from '../components/ui/button'
@@ -25,6 +26,7 @@ export function Component() {
     <p>Public fixture password: <code>{DEMO_PASSWORD}</code></p>
     {webRoles.map((role) => <div className="space-y-2" key={role}><p>{demoStore.getState().data.users.find((user) => user.role === role && user.accountStatus !== 'Pending')?.email}</p><Button disabled={busy} onClick={() => void switchPersona(role)}>Continue as {roleLabels[role]}</Button></div>)}
     <Button variant="outline" disabled={busy} onClick={async () => { setBusy(true); await mockServices.resetDemoData(); setMessage('Seed data restored.'); setBusy(false) }}>Reset Demo Data</Button>
+    <Button variant="outline" onClick={() => { failNextLocalPayment(); setMessage('The next local payment will fail once; a retry can succeed.') }}>Fail next local payment</Button>
     <p role="status">{message}</p>
     <p><Link className="underline" to="/reset-password">Open password-reset flow</Link> · <Link className="underline" to="/login">Sign in</Link></p>
     <p>For the upload flow, use synthetic fixture files with these names. Only filename, type, and size are retained; file contents are never read.</p>
