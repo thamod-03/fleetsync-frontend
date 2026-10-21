@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test tests/foundation.test.ts tests/auth.test.ts tests/coordinator.test.ts tests/trip-assignment.test.ts tests/trip-management.test.ts tests/coordinator-workspace.test.ts tests/customer.test.ts tests/customer-billing.test.ts && node --test tests/routes.test.mjs tests/production-build.test.mjs"
+    "test": "node --experimental-strip-types --test tests/foundation.test.ts tests/auth.test.ts tests/coordinator.test.ts tests/trip-assignment.test.ts tests/trip-management.test.ts tests/coordinator-workspace.test.ts tests/customer.test.ts tests/customer-billing.test.ts tests/customer-chat.test.ts tests/notifications.test.ts && node --test tests/routes.test.mjs tests/production-build.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -18,6 +18,7 @@
     "@tanstack/react-table": "^9.3.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.60.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router'
-import { Info, Search, Send } from 'lucide-react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { ConversationPane } from '../../components/chat/conversation-pane'
+import { useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { Info, Search } from 'lucide-react'
 import { applicationServices } from '../../services/application-services'
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/page-states'
-import { sendChatSchema, type ChatWorkspace, type SendChatInput } from '../../types/communications'
+import type { ChatWorkspace } from '../../types/communications'
 import { StatusBadge } from './coordinator-components'
 import { useCoordinatorQuery } from './use-coordinator-query'
 import './workspace.css'
-import { initials, messageTime } from './message-format'
+import { initials } from './message-format'
 
 export function ChatPage() {
   const { result, retry } = useCoordinatorQuery(applicationServices.getChatWorkspace)
@@ -34,29 +32,4 @@ export function ChatWorkspaceView({ data }: { data: ChatWorkspace }) {
       {conversation ? <ConversationPane key={conversation.id} conversation={conversation} userId={data.user.id} tripId={room?.tripId} /> : <EmptyState title="Select a conversation" description="Choose an order and person to view messages." />}
     </div>
   </div>
-}
-
-function ConversationPane({ conversation, userId, tripId }: { conversation: ChatWorkspace['rooms'][number]['conversations'][number]; userId: string; tripId?: string }) {
-  const [error, setError] = useState('')
-  const historyEnd = useRef<HTMLDivElement>(null)
-  const pending = useRef<{ text: string; id: string } | null>(null)
-  const latestId = conversation.messages.at(-1)?.id
-  useEffect(() => { historyEnd.current?.scrollIntoView({ block: 'nearest' }) }, [latestId])
-  const form = useForm<SendChatInput>({ resolver: zodResolver(sendChatSchema), defaultValues: { conversationId: conversation.id, text: '' } })
-  useEffect(() => {
-    let current = true
-    if (conversation.unread) void applicationServices.markConversationRead(conversation.id).then((result) => { if (!result.ok && current) setError(result.error) }).catch(() => { if (current) setError('Unable to update unread messages.') })
-    return () => { current = false }
-  }, [conversation.id, conversation.unread])
-  const submit = (event: FormEvent<HTMLFormElement>) => form.handleSubmit(async (input) => {
-    setError('')
-    if (!pending.current || pending.current.text !== input.text) pending.current = { text: input.text, id: `message-${crypto.randomUUID()}` }
-    try { const result = await applicationServices.sendChatMessage({ ...input, messageId: pending.current.id }); if (result.ok) { pending.current = null; form.reset({ conversationId: conversation.id, text: '' }) } else setError(result.error) }
-    catch { setError('Unable to store the message. Please try again.') }
-  })(event)
-  return <section className="chat-conversation"><div className="chat-conversation-header"><span className="workspace-avatar">{initials(conversation.peer.name)}</span><div><h2>{conversation.peer.name}</h2><small>{conversation.peer.role}</small></div>{tripId && <Link className="coord-button secondary small" to={`/coordinator/trips/${tripId}`}>View trip</Link>}</div>
-    {error && <ErrorState message={error} />}
-    <div className="chat-history" role="log" aria-label={`Conversation with ${conversation.peer.name}`} aria-live="polite">{conversation.messages.length ? conversation.messages.map((message) => <div key={message.id} className={`chat-message ${message.senderId === userId ? 'outgoing' : ''}`}><small>{message.senderId === userId ? 'You' : conversation.peer.name}</small><p>{message.text}</p><time dateTime={message.createdAt}>{messageTime(message.createdAt)}{message.senderId === userId ? ' · Stored locally' : ''}</time></div>) : <p className="workspace-muted">No messages yet. Start the conversation.</p>}<div ref={historyEnd} aria-hidden="true" /></div>
-    <form className="chat-composer" onSubmit={submit} noValidate><div><textarea rows={1} className="coord-input" aria-label={`Write a message to ${conversation.peer.name}`} placeholder={`Write a message to ${conversation.peer.name.split(' ')[0]}…`} maxLength={4000} {...form.register('text')} aria-invalid={!!form.formState.errors.text} aria-describedby="chat-message-error" disabled={form.formState.isSubmitting} />{form.formState.errors.text && <p className="coord-field-error" id="chat-message-error">{form.formState.errors.text.message}</p>}</div><button className="coord-button" disabled={form.formState.isSubmitting}><Send size={14} aria-hidden="true" />{form.formState.isSubmitting ? 'Saving…' : 'Send'}</button></form>
-  </section>
 }

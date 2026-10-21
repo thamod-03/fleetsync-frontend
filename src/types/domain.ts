@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { fareChargesSchema, totalFare } from './quotation.ts'
 import { holdsTripResources } from './trip-policy.ts'
-import { conversationSchema, mailMessageSchema } from './communications.ts'
+import { conversationSchema, mailMessageSchema, conversationOwnerId } from './communications.ts'
 import { reportExportSchema } from './reporting.ts'
+import { paymentInstrumentSchema } from './customer-billing.ts'
 
 export const userRoles = ['admin', 'customer', 'coordinator', 'driver', 'mechanic'] as const
 export const webRoles = ['admin', 'customer', 'coordinator'] as const
@@ -72,6 +73,7 @@ export const paymentSchema = z.object({
   orderId: id.optional(), customerId: id.optional(), requestId: z.uuid().optional(),
   createdAt: timestamp.optional(), completedAt: timestamp.optional(), method: z.literal('Card').optional(),
   reference: z.string().optional(), failureReason: z.string().optional(),
+  instrumentId: paymentInstrumentSchema.optional(), cardLast4: z.string().regex(/^\d{4}$/).optional(),
 })
 export const notificationSchema = z.object({ ...record, userId: id, message: z.string(), read: z.boolean(), createdAt: timestamp, simulated: z.literal(true), tripId: id.optional(), channel: z.literal('Push').optional(), deliveryState: z.literal('Queued locally').optional() })
 export const chatMessageSchema = z.object({ ...record, senderId: id, recipientId: id, text: z.string(), createdAt: timestamp, simulated: z.literal(true), conversationId: id.optional(), orderId: id.optional(), readBy: z.array(id).default([]), deliveryState: z.literal('Stored locally').optional() })
@@ -143,13 +145,16 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
   }
   const knownUser = (userId: string) => data.users.some((user) => user.id === userId)
   for (const conversation of data.conversations) {
-    if (!data.orders.some((order) => order.id === conversation.orderId) || !userHasRole(conversation.coordinatorId, 'coordinator') || !knownUser(conversation.participantId) || conversation.coordinatorId === conversation.participantId) invalid('Invalid conversation relationship')
+    if (!data.orders.some((order) => order.id === conversation.orderId) || !knownUser(conversation.participantId) || conversationOwnerId(conversation) === conversation.participantId) invalid('Invalid conversation relationship')
+    if (conversation.kind === 'CustomerStaff') {
+      if (!userHasRole(conversation.customerUserId, 'customer') || !data.customers.some((customer) => customer.userId === conversation.customerUserId && data.orders.some((order) => order.id === conversation.orderId && order.customerId === customer.id)) || (!userHasRole(conversation.participantId, 'driver') && !userHasRole(conversation.participantId, 'mechanic'))) invalid('Invalid Customer staff conversation')
+    } else if (!userHasRole(conversation.coordinatorId, 'coordinator')) invalid('Invalid conversation coordinator')
   }
-  if (new Set(data.conversations.map((item) => JSON.stringify([item.orderId, item.coordinatorId, item.participantId]))).size !== data.conversations.length) invalid('Duplicate order conversation')
+  if (new Set(data.conversations.map((item) => JSON.stringify([item.orderId, conversationOwnerId(item), item.participantId]))).size !== data.conversations.length) invalid('Duplicate order conversation')
   for (const message of data.chatMessages) {
     if (message.conversationId) {
       const conversation = data.conversations.find((item) => item.id === message.conversationId)
-      if (!conversation || message.orderId !== conversation.orderId || ![conversation.coordinatorId, conversation.participantId].includes(message.senderId) || ![conversation.coordinatorId, conversation.participantId].includes(message.recipientId) || message.senderId === message.recipientId) invalid('Invalid chat relationship')
+      if (!conversation || message.orderId !== conversation.orderId || ![conversationOwnerId(conversation), conversation.participantId].includes(message.senderId) || ![conversationOwnerId(conversation), conversation.participantId].includes(message.recipientId) || message.senderId === message.recipientId) invalid('Invalid chat relationship')
     }
     if (message.readBy.some((userId) => userId !== message.senderId && userId !== message.recipientId)) invalid('Invalid message reader')
   }

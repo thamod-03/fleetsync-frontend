@@ -119,3 +119,12 @@
 .customer-shell .coord-card-header:has(>svg){justify-content:flex-end;flex-direction:row-reverse}
 .customer-shell .coord-card-header>svg{box-sizing:content-box;padding:8px;background:#dbeafe;color:#4f46e5;border-radius:8px;flex-shrink:0}
 .customer-wizard-steps li:not(:last-child)::after{content:'';height:1px;flex:1;background:#e3e6eb}
+.customer-order-filters .customer-search{flex:0 1 320px;min-height:40px}
+.customer-order-filters .customer-search input{width:100%}
+.customer-order-filters .customer-search svg{flex-shrink:0}
+.customer-order-filters>.coord-input{width:180px;flex:0 0 180px}
+.customer-order-filters>span{white-space:nowrap}
+.customer-shell .coord-tabs{padding-inline:20px;gap:24px}
+.customer-shell .coord-tabs button{white-space:nowrap;min-height:46px}
+
+@media(max-width:650px){.customer-order-filters .customer-search{flex-basis:100%}.customer-order-filters>.coord-input{flex:1 1 160px}}

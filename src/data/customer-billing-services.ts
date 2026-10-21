@@ -8,6 +8,8 @@ import type { MessageNotificationService } from '../services/message-notificatio
 import { localMessageNotifications } from './message-notifications.ts'
 import { localPaymentProvider } from './local-payment-provider.ts'
 import { projectOrders } from './order-projections.ts'
+import { testPaymentCards } from './payment-fixtures.ts'
+import type { InvoiceDocument, TestPaymentCard } from '../types/customer-billing.ts'
 
 const fail = (error: string) => ({ ok: false as const, error })
 const pendingByStore = new WeakMap<DemoStore, Map<string, Promise<ServiceResult<Payment>>>>()
@@ -44,6 +46,22 @@ export function createCustomerBillingServices(store: DemoStore, delayMs: number,
   pendingByStore.set(store, flights)
 
   return {
+    async getPaymentTestCards(): Promise<ServiceResult<TestPaymentCard[]>> {
+      await wait()
+      return identity() ? { ok: true, data: structuredClone([...testPaymentCards]) } : fail('Sign in to your customer account.')
+    },
+    async downloadCustomerInvoice(id: string): Promise<ServiceResult<InvoiceDocument>> {
+      await wait(); const item = transaction(id)
+      if (!item || item.payment.status !== 'Succeeded') return fail('An invoice is not available for this payment.')
+      try {
+        const { generateInvoicePdf } = await import('../lib/invoice-pdf.ts')
+        const bytes = await generateInvoicePdf(structuredClone(item))
+        // Recheck after asynchronous font/PDF generation, including session changes/reset.
+        const latest = transaction(id)
+        if (!latest || latest.payment !== item.payment || latest.payment.status !== 'Succeeded') return fail('This payment is no longer available to your account.')
+        return { ok: true, data: { filename: `FleetSync-invoice-${id.replace(/[^a-zA-Z0-9-]/g, '-')}.pdf`, bytes } }
+      } catch { return fail('Unable to generate the invoice PDF. Please try again.') }
+    },
     async getCustomerQuotations(): Promise<ServiceResult<CustomerQuotation[]>> {
       await wait()
       return identity() ? { ok: true, data: structuredClone(quotations()) } : fail('Your customer account is unavailable.')
@@ -82,7 +100,7 @@ export function createCustomerBillingServices(store: DemoStore, delayMs: number,
     async getCustomerInvoice(id: string): Promise<ServiceResult<InvoiceAvailability>> {
       await wait(); const item = transaction(id)
       if (!item || item.payment.status !== 'Succeeded') return fail('An invoice is not available for this payment.')
-      return { ok: true, data: structuredClone({ transaction: item, available: false, reason: 'Invoice generation is not available yet. Your payment record is shown below.' }) }
+      return { ok: true, data: structuredClone({ transaction: item, available: true, reason: 'Payment invoice. No tax amounts or external payment are represented.' }) }
     },
     async payQuotation(input: PaymentInput): Promise<ServiceResult<Payment>> {
       await wait()
@@ -100,8 +118,13 @@ export function createCustomerBillingServices(store: DemoStore, delayMs: number,
       if (sameRequest && sameRequest.status !== 'Pending') return { ok: true, data: structuredClone(sameRequest) }
       let payment = sameRequest ?? item.details.payments.find((payment) => payment.status === 'Pending')
       if (payment && (payment.amount !== quotation.amount || payment.quotationId !== quotation.id)) return fail('The payment details have changed. Contact the coordinator.')
+      if (payment && input.instrumentId && input.instrumentId !== (payment.instrumentId ?? 'test-success')) return fail('Resume the pending attempt with its original test card.')
       if (!payment) {
         payment = { id: `pay-${crypto.randomUUID()}`, quotationId: quotation.id, orderId: quotation.orderId, customerId: person.customer.id, requestId: input.requestId, amount: quotation.amount, currency: quotation.currency, status: 'Pending', simulated: true, method: parsed.data.method, createdAt: new Date().toISOString() }
+        if (parsed.data.instrumentId) {
+          payment.instrumentId = parsed.data.instrumentId
+          payment.cardLast4 = testPaymentCards.find((card) => card.id === parsed.data.instrumentId)?.last4
+        }
         store.setState({ data: { ...data, payments: [...data.payments, payment] } })
       }
       const existing = flights.get(payment.id)
@@ -109,7 +132,7 @@ export function createCustomerBillingServices(store: DemoStore, delayMs: number,
       const reservation = payment
       const operation = (async (): Promise<ServiceResult<Payment>> => {
         let outcome: Awaited<ReturnType<PaymentProvider['process']>>
-        try { outcome = await provider.process({ paymentId: reservation.id, amount: reservation.amount, currency: reservation.currency }) }
+        try { outcome = await provider.process({ paymentId: reservation.id, amount: reservation.amount, currency: reservation.currency, instrumentId: reservation.instrumentId }) }
         catch { return fail('Payment processing is unavailable. Your pending attempt can be resumed safely.') }
         const latest = store.getState().data
         const saved = latest.payments.find((payment) => payment.id === reservation.id)

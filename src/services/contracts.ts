@@ -1,4 +1,4 @@
-import type { CustomerQuotation, CustomerPayment, InvoiceAvailability, PaymentInput, QuotationDecisionInput } from '../types/customer-billing.ts'
+import type { CustomerQuotation, CustomerPayment, InvoiceAvailability, InvoiceDocument, TestPaymentCard, PaymentInput, QuotationDecisionInput } from '../types/customer-billing.ts'
 import type { Payment } from '../types/domain.ts'
 import type { LoginInput, PasswordResetInput, RecoveryInput, RegistrationInput, StaffApplicationInput } from '../features/auth/auth-schemas.ts'
 import type { DemoDocument, User, WebRole } from '../types/domain.ts'
@@ -19,6 +19,10 @@ export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getNotifications(): Promise<ServiceResult<import('../types/domain.ts').Notification[]>>
+  markAllNotificationsRead(): Promise<ServiceResult<null>>
+  getPaymentTestCards(): Promise<ServiceResult<TestPaymentCard[]>>
+  downloadCustomerInvoice(id: string): Promise<ServiceResult<InvoiceDocument>>
   getCustomerQuotations(): Promise<ServiceResult<CustomerQuotation[]>>
   getCustomerQuotation(id: string): Promise<ServiceResult<CustomerQuotation>>
   decideQuotation(input: QuotationDecisionInput): Promise<ServiceResult<FareQuotation>>

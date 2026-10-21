@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { DemoStore } from '../store/demo-store.ts'
 import type { ChatMessage } from '../types/domain.ts'
-import { composeMailSchema, sendChatSchema } from '../types/communications.ts'
+import { composeMailSchema, sendChatSchema, conversationOwnerId } from '../types/communications.ts'
 import type { ChatWorkspace, ComposeMailInput, ConversationView, Mailbox, MailFlag, MailMessage, SendChatInput } from '../types/communications.ts'
 import type { ServiceResult } from '../services/contracts.ts'
 import type { MessageNotificationService } from '../services/message-notifications.ts'
@@ -16,7 +16,7 @@ export function createCommunicationServices(store: DemoStore, delayMs: number, n
   const actor = () => store.getState().data.users.find((item) => item.id === store.getState().sessionUserId && item.accountStatus !== 'Pending')
   const canMail = () => { const user = actor(); return user && ['admin', 'coordinator'].includes(user.role) ? user : undefined }
   const visibleMail = (mail: MailMessage, userId: string) => mail.senderId === userId || (mail.status !== 'Draft' && mail.recipientIds.includes(userId))
-  const findConversation = (id: string, userId: string) => orderConversations(store.getState().data).find((item) => item.id === id && [item.coordinatorId, item.participantId].includes(userId))
+  const findConversation = (id: string, userId: string) => orderConversations(store.getState().data).find((item) => item.id === id && [conversationOwnerId(item), item.participantId].includes(userId))
   return {
     async getChatWorkspace(): Promise<ServiceResult<ChatWorkspace>> {
       await wait(); const user = actor()
@@ -29,14 +29,16 @@ export function createCommunicationServices(store: DemoStore, delayMs: number, n
       return result ? { ok: true, data: result } : fail('Conversation not found.')
     },
     async sendChatMessage(input: SendChatInput): Promise<ServiceResult<ChatMessage>> {
+      const sessionUserId = store.getState().sessionUserId
       await wait(); const user = actor(); const parsed = sendChatSchema.safeParse(input)
       if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? 'Check the message.')
+      if (user?.id !== sessionUserId) return fail('Your account changed before the message was saved. Please sign in again.')
       const conversation = user && findConversation(parsed.data.conversationId, user.id)
       if (!user || !conversation) return fail('This conversation is unavailable to your account.')
       const { data } = store.getState()
       const previous = data.chatMessages.find((item) => item.id === parsed.data.messageId)
       if (previous) return previous.senderId === user.id && previous.conversationId === conversation.id && previous.text === parsed.data.text ? { ok: true, data: structuredClone(previous) } : fail('Message identifier is already in use.')
-      const message: ChatMessage = { id: parsed.data.messageId ?? `message-${crypto.randomUUID()}`, conversationId: conversation.id, orderId: conversation.orderId, senderId: user.id, recipientId: user.id === conversation.coordinatorId ? conversation.participantId : conversation.coordinatorId, text: parsed.data.text, createdAt: new Date().toISOString(), readBy: [user.id], deliveryState: 'Stored locally', simulated: true }
+      const message: ChatMessage = { id: parsed.data.messageId ?? `message-${crypto.randomUUID()}`, conversationId: conversation.id, orderId: conversation.orderId, senderId: user.id, recipientId: user.id === conversationOwnerId(conversation) ? conversation.participantId : conversationOwnerId(conversation), text: parsed.data.text, createdAt: new Date().toISOString(), readBy: [user.id], deliveryState: 'Stored locally', simulated: true }
       try {
         const notifications = notifier.prepare([message.recipientId], `New message from ${user.name} · ${conversation.orderId}`, message.createdAt)
         store.setState({ data: { ...data, conversations: data.conversations.some((item) => item.id === conversation.id) ? data.conversations : [...data.conversations, conversation], chatMessages: [...data.chatMessages, message], notifications: [...data.notifications, ...notifications] } })
@@ -44,8 +46,9 @@ export function createCommunicationServices(store: DemoStore, delayMs: number, n
       } catch { return fail('Unable to store the message. Please try again.') }
     },
     async markConversationRead(id: string): Promise<ServiceResult<null>> {
+      const sessionUserId = store.getState().sessionUserId
       await wait(); const user = actor()
-      if (!user || !findConversation(id, user.id)) return fail('This conversation is unavailable to your account.')
+      if (!user || user.id !== sessionUserId || !findConversation(id, user.id)) return fail('This conversation is unavailable to your account.')
       const { data } = store.getState()
       if (data.chatMessages.some((item) => item.conversationId === id && item.recipientId === user.id && !item.readBy.includes(user.id))) {
         store.setState({ data: { ...data, chatMessages: data.chatMessages.map((item) => item.conversationId === id && item.recipientId === user.id && !item.readBy.includes(user.id) ? { ...item, readBy: [...item.readBy, user.id] } : item) } })
