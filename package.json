@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test tests/foundation.test.ts tests/auth.test.ts tests/coordinator.test.ts tests/trip-assignment.test.ts tests/trip-management.test.ts tests/coordinator-workspace.test.ts && node --test tests/routes.test.mjs tests/production-build.test.mjs"
+    "test": "node --experimental-strip-types --test tests/foundation.test.ts tests/auth.test.ts tests/coordinator.test.ts tests/trip-assignment.test.ts tests/trip-management.test.ts tests/coordinator-workspace.test.ts tests/customer.test.ts && node --test tests/routes.test.mjs tests/production-build.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

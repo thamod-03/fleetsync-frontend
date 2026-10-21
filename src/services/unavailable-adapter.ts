@@ -6,6 +6,7 @@ const unavailable = async () => ({ ok: false as const, error: 'This service is c
 // No local session, fixture credential, or mock fallback is consulted here.
 export const unavailableAdapter: ServiceAdapter = {
   services: {
+    getCustomerWorkspace: unavailable, getCustomerOrder: unavailable, createCustomerOrder: unavailable,
     getReportContext: unavailable, generateReport: unavailable, recordReportExport: unavailable,
     getChatWorkspace: unavailable, getConversation: unavailable, sendChatMessage: unavailable, markConversationRead: unavailable,
     getMailbox: unavailable, saveMail: unavailable, setMailFlag: unavailable,

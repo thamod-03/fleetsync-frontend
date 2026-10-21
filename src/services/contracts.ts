@@ -9,12 +9,17 @@ import type { CancelTripInput, CompleteTripInput, ManagedTrip, TripList } from '
 import type { ChatWorkspace, ComposeMailInput, ConversationView, Mailbox, MailFlag, MailMessage, SendChatInput } from '../types/communications.ts'
 import type { ChatMessage } from '../types/domain.ts'
 import type { OperationalReport, ReportContext, ReportExport, ReportFilters } from '../types/reporting.ts'
+import type { CreateCustomerOrderInput, CustomerOrderDetails, CustomerWorkspace } from '../types/customer.ts'
+import type { TransportOrder } from '../types/domain.ts'
 
 export type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string }
 export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getCustomerWorkspace(): Promise<ServiceResult<CustomerWorkspace>>
+  getCustomerOrder(id: string): Promise<ServiceResult<CustomerOrderDetails>>
+  createCustomerOrder(input: CreateCustomerOrderInput): Promise<ServiceResult<TransportOrder>>
   getReportContext(): Promise<ServiceResult<ReportContext>>
   generateReport(input: ReportFilters): Promise<ServiceResult<OperationalReport>>
   recordReportExport(report: OperationalReport, format: 'CSV' | 'PDF'): Promise<ServiceResult<ReportExport>>

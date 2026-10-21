@@ -40,6 +40,11 @@ export const transportOrderSchema = z.object({
   estimatedReturnAt: timestamp.optional(),
   distanceKm: z.number().positive().optional(), weightTonnes: z.number().positive().optional(),
   pallets: z.string().optional(), handling: z.string().optional(), customerNote: z.string().optional(),
+  pickupAddress: z.string().optional(), pickupContactName: z.string().optional(), pickupContactPhone: z.string().optional(),
+  destinationAddress: z.string().optional(), receiverName: z.string().optional(), receiverPhone: z.string().optional(),
+  deliveryBy: timestamp.optional(), packing: z.string().optional(), cargoDescription: z.string().optional(),
+  palletCount: z.number().int().nonnegative().optional(), palletSize: z.string().optional(),
+  submissionKey: z.string().optional(), submissionFingerprint: z.string().optional(),
   status: z.enum(['Draft', 'Submitted', 'Quoted', 'Accepted', 'Declined']),
 })
 export const fareQuotationSchema = z.object({
@@ -102,6 +107,9 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
     if (data.users.some((user) => user.role === role && !profiles.some((profile) => profile.userId === user.id))) invalid('Missing user profile')
   }
   if (data.orders.some((order) => !data.customers.some((customer) => customer.id === order.customerId))) invalid('Unknown order customer')
+  if (data.orders.some((order) => order.pickupAt && order.deliveryBy && Date.parse(order.deliveryBy) < Date.parse(order.pickupAt))) invalid('Delivery deadline precedes pickup')
+  const submissionKeys = data.orders.flatMap((order) => order.submissionKey ? [order.submissionKey] : [])
+  if (new Set(submissionKeys).size !== submissionKeys.length) invalid('Duplicate order submission key')
   if (data.quotations.some((quote) => !data.orders.some((order) => order.id === quote.orderId))) invalid('Unknown quotation order')
   if (data.quotations.some((quote) => quote.charges && totalFare(quote.charges) !== quote.amount)) invalid('Quotation total does not match its charges')
   if (data.payments.some((payment) => !data.quotations.some((quote) => quote.id === payment.quotationId))) invalid('Unknown payment quotation')
