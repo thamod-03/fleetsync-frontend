@@ -26,6 +26,9 @@ export const subscribeApplication = (listener: () => void) => {
 }
 
 export const applicationServices: ApplicationServices = {
+  getCustomerWorkspace: async () => { await initialization; return adapter.services.getCustomerWorkspace() },
+  getCustomerOrder: async (id) => { await initialization; return adapter.services.getCustomerOrder(id) },
+  createCustomerOrder: async (input) => { await initialization; return adapter.services.createCustomerOrder(input) },
   getReportContext: async () => { await initialization; return adapter.services.getReportContext() },
   generateReport: async (input) => { await initialization; return adapter.services.generateReport(input) },
   recordReportExport: async (report, format) => { await initialization; return adapter.services.recordReportExport(report, format) },

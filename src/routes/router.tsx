@@ -8,6 +8,9 @@ import { ForgotPasswordPage } from '../features/auth/forgot-password-page'
 import { ResetPasswordPage } from '../features/auth/reset-password-page'
 import { AdminDashboardPage } from '../features/admin/dashboard-page'
 import { CustomerDashboardPage } from '../features/customer/dashboard-page'
+import { CustomerOrdersPage } from '../features/customer/orders-page'
+import { NewCustomerOrderPage } from '../features/customer/new-order-page'
+import { CustomerOrderDetailsPage } from '../features/customer/order-details-page'
 import { CoordinatorDashboardPage } from '../features/coordinator/dashboard-page'
 import { SubmittedOrdersPage } from '../features/coordinator/submitted-orders-page'
 import { ReviewOrderPage } from '../features/coordinator/review-order-page'
@@ -38,7 +41,11 @@ export const routes: RouteObject[] = [{
       { index: true, element: <AdminDashboardPage /> }, { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { element: <RoleGuard role="customer" />, children: [{ path: '/customer', element: <AppShell />, children: [
-      { index: true, element: <CustomerDashboardPage /> }, { path: '*', element: <SystemPage kind="not-found" /> },
+      { index: true, element: <CustomerDashboardPage /> },
+      { path: 'orders', element: <CustomerOrdersPage /> },
+      { path: 'orders/new', element: <NewCustomerOrderPage /> },
+      { path: 'orders/:orderId', element: <CustomerOrderDetailsPage /> },
+      { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { element: <RoleGuard role="coordinator" />, children: [{ path: '/coordinator', element: <AppShell />, children: [
       { index: true, element: <CoordinatorDashboardPage /> },
