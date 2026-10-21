@@ -75,7 +75,7 @@ export function projectReport(data: DemoDataset, filters: ReportFilters, generat
     { label: 'Revenue', value: `LKR ${money(revenueFor(cohort))}`, note: `${paidOrders} paid orders` },
   ], notes: [
     'Trip periods use actual return for Completed, cancellation time for Cancelled, otherwise scheduled start, creation time, or the related order creation date when trip dates are absent. Orders use creation dates. Dates are grouped in UTC.',
-    'Payments have no recorded timestamps: revenue is recorded successful payments for the selected order cohort, not receipts during the period. Totals count each order once. Vehicle-type revenue is Not attributable when an order references several types; no allocation rule is assumed.',
+    `${paymentsFor(cohort).some((payment) => payment.createdAt || payment.completedAt) ? 'Legacy payments may have no recorded timestamps' : 'Payments have no recorded timestamps'}: revenue is recorded successful payments for the selected order cohort, not receipts during the period. Totals count each order once. Vehicle-type revenue is Not attributable when an order references several types; no allocation rule is assumed.`,
     'Missing starting odometers show Not recorded. Scheduled days are planned calendar dates, not measured utilisation. Idle/service history, maintenance costs and on-time rates are unavailable.',
   ] }
 }

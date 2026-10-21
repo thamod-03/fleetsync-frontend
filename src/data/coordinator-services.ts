@@ -46,7 +46,7 @@ export function createCoordinatorServices(store: DemoStore, delayMs: number, not
       const createdAt = previous?.createdAt ?? new Date().toISOString()
       const quotation: FareQuotation = {
         id: previous?.id ?? `quotation-${crypto.randomUUID()}`, orderId: order.id,
-        amount: totalFare(values.charges), currency: 'LKR', status: publish ? 'Pending' : 'Draft',
+        amount: totalFare(values.charges), currency: 'LKR', status: publish ? 'Pending' : 'Draft', publishedAt: publish ? new Date().toISOString() : undefined,
         vehicleType: values.vehicleType, charges: values.charges, validUntil: values.validUntil, message: values.message, createdAt,
       }
       let delivery = { message: '', emailDelivered: false }

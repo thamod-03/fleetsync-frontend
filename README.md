@@ -1,5 +1,49 @@
 # FleetSync frontend
 
+## Customer Batch 02 ? Quotations and Payments
+
+Read-only Figma references: Fare quotation `160:5892`, Payment `161:5978`, Success `161:6347`, Failed `161:6668`, Payment history `162:6243`, including its Invoice preview `162:6737`. No separate invoice document, decline dialog, processing state, or mobile frame was found on the Screens page. Those states reuse existing FleetSync components and responsive conventions.
+
+Implemented routes:
+
+- `/customer/quotations` and `/customer/quotations/:quotationId`: published, person-owned quotations; saved breakdown, validity, Coordinator message, order details, acceptance/decline and payment navigation.
+- `/customer/quotations/:quotationId/payment`: accepted-quotation payment summary and safe, non-editable card placeholders. Card details are never collected. An explicit confirmation records a local outcome through a replaceable PaymentProvider; no gateway request or money transfer occurs.
+- `/customer/payments/:paymentId/success` and `/failed`: persisted results only; refresh never initiates payment. Unknown, unauthorized and mismatched-result URLs are rejected.
+- `/customer/payments`: shared payment history, status/period/search filters, pagination, actual dated totals and invoice preview navigation.
+- `/customer/payments/:paymentId/invoice`: successful owned payment record and truthful invoice-unavailable state. The design's tax invoice/PDF cannot be generated until an approved invoice contract, issuer details and backend/document adapter exist. No tax values, legal invoice identifiers or card digits are invented.
+
+The existing service facade exposes Customer billing queries, quotation decisions, payment processing and invoice availability. Decisions update the canonical quotation/order with audit history and local Coordinator notifications. Payment amounts and identities come from saved relationships, never form input. Payment initiation persists Pending; finalization persists Succeeded or Failed with a local reference and notices. Concurrent calls in the same store share one processing operation. Exact retries return existing results; new attempts after failure are permitted, and an existing successful payment prevents another successful obligation. Pending attempts survive reload and resume explicitly. No automatic payment, expiry, refund, cancellation, repricing or trip-eligibility rule is added.
+
+Local development and explicitly opted-in Vercel Preview use the same gated mock adapter. Production remains unavailable and excludes the mock payment provider. The normal UI contains no payment outcome selector. Local `/__development` has **Fail next local payment**, a one-shot failure fixture excluded from both built Preview and Production utilities; retry then succeeds. Reset Demo Data clears payment records, decisions and this transient fixture flag. Preview's default local provider succeeds; controlled failure is exercised with injected providers in tests and the local-only utility. Do not promote a staging artifact to Production. No Vercel configuration or environment values changed.
+
+Version-1 snapshots remain compatible: publication/decision and transaction fields are optional, historical dates/methods remain Not recorded, and ownership can still be derived from legacy quote/order relationships. Dashboard/order links now reach billing screens; Customer Chat remains deferred. Coordinator reports consume the same Succeeded payment array and retain their existing order-cohort accounting basis, not payment-period receipts.
+
+Manual check: create an order as Customer, publish its quote as Coordinator in the same browser, return as Customer, accept and record payment, refresh the result/history and verify Coordinator order/report values. Repeat with decline, and with the local failure fixture before payment; retry from the failed result. Check foreign/unknown/result-mismatch URLs, filters/paging, mobile overflow, keyboard focus and non-editable card controls. Compare all five frames at 1440px. Invoice PDF and real gateway/email delivery are intentionally unavailable. No browser surface was connected during implementation.
+
+
+### Batch 02 file manifest
+
+Created:
+
+- `src/types/customer-billing.ts`
+- `src/services/payment-provider.ts`
+- `src/data/customer-billing-services.ts`, `src/data/local-payment-provider.ts`
+- `src/features/customer/billing-components.tsx`, `billing.css`, `quotation-page.tsx`, `payment-page.tsx`, `payment-result-page.tsx`, `payment-history-page.tsx`, `payment-history.ts`
+- `tests/customer-billing.test.ts`
+- `src/assets/customer-billing/`: activity.svg, alert.svg, card.svg, destination.svg, failed.svg, fleet.svg, lock.svg, pickup.svg, quote-clock.svg, success.svg, trend.svg.
+
+Modified:
+
+- `README.md`, `docs/ASSUMPTIONS.md`, `package.json` (test command only).
+- `src/types/domain.ts`
+- `src/services/contracts.ts`, `application-services.ts`, `unavailable-adapter.ts`
+- `src/data/mock-services.ts`, `coordinator-services.ts`, `report-services.ts`
+- `src/development/service-adapter.ts`, `tools-page.tsx`
+- `src/routes/router.tsx`, `navigation.ts`
+- `src/components/layout/sidebar.tsx`
+- `src/features/customer/dashboard-page.tsx`, `order-details-page.tsx`
+- `tests/routes.test.mjs`, `tests/production-build.test.mjs`
+
 ## Customer Batch 01 — Dashboard and Transport Orders
 
 Implemented `/customer`, `/customer/orders`, `/customer/orders/new` and `/customer/orders/:orderId` from the read-only Figma frames Dashboard `150:5292`, Route `152:5434`, Cargo `155:5503`, Review `156:5595`, My orders `157:5675`, and Order details `158:5805`. The three wizard steps are states within one route, with React Hook Form values retained when moving back/forward or editing from review. Customer pages reuse the existing sidebar/header, card primitives, tokens and responsive shell. Search, status tabs, period filtering, pagination and order-detail links are functional.

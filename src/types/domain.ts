@@ -52,6 +52,7 @@ export const fareQuotationSchema = z.object({
   status: z.enum(['Draft', 'Pending', 'Accepted', 'Declined']),
   vehicleType: z.string().min(1).optional(), charges: fareChargesSchema.optional(),
   validUntil: timestamp.optional(), message: z.string().optional(), createdAt: timestamp.optional(),
+  publishedAt: timestamp.optional(), decidedAt: timestamp.optional(), decidedBy: id.optional(), decisionRequestId: z.uuid().optional(),
 })
 export const assignmentSchema = z.object({ vehicleId: id, driverId: id, mechanicId: id })
 const tripBase = z.object({ ...record, orderId: id, assignment: assignmentSchema,
@@ -68,6 +69,9 @@ export const tripSchema = z.discriminatedUnion('status', [
 export const paymentSchema = z.object({
   ...record, quotationId: id, amount: z.number().nonnegative(), currency: z.literal('LKR'),
   status: z.enum(['Pending', 'Succeeded', 'Failed']), simulated: z.literal(true),
+  orderId: id.optional(), customerId: id.optional(), requestId: z.uuid().optional(),
+  createdAt: timestamp.optional(), completedAt: timestamp.optional(), method: z.literal('Card').optional(),
+  reference: z.string().optional(), failureReason: z.string().optional(),
 })
 export const notificationSchema = z.object({ ...record, userId: id, message: z.string(), read: z.boolean(), createdAt: timestamp, simulated: z.literal(true), tripId: id.optional(), channel: z.literal('Push').optional(), deliveryState: z.literal('Queued locally').optional() })
 export const chatMessageSchema = z.object({ ...record, senderId: id, recipientId: id, text: z.string(), createdAt: timestamp, simulated: z.literal(true), conversationId: id.optional(), orderId: id.optional(), readBy: z.array(id).default([]), deliveryState: z.literal('Stored locally').optional() })
@@ -113,6 +117,14 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
   if (data.quotations.some((quote) => !data.orders.some((order) => order.id === quote.orderId))) invalid('Unknown quotation order')
   if (data.quotations.some((quote) => quote.charges && totalFare(quote.charges) !== quote.amount)) invalid('Quotation total does not match its charges')
   if (data.payments.some((payment) => !data.quotations.some((quote) => quote.id === payment.quotationId))) invalid('Unknown payment quotation')
+  for (const payment of data.payments) {
+    const quote = data.quotations.find((item) => item.id === payment.quotationId)
+    const order = data.orders.find((item) => item.id === quote?.orderId)
+    if ((payment.orderId && payment.orderId !== order?.id) || (payment.customerId && payment.customerId !== order?.customerId)) invalid('Invalid payment ownership')
+    if (payment.requestId && (payment.amount !== quote?.amount || payment.currency !== quote.currency)) invalid('Invalid payment amount')
+  }
+  if (data.payments.some((payment) => payment.requestId && payment.status === 'Succeeded' && data.payments.some((other) => other.id !== payment.id && other.quotationId === payment.quotationId && other.status === 'Succeeded'))) invalid('Duplicate successful payment')
+  if (data.quotations.some((quote) => quote.decidedBy && !data.customers.some((customer) => customer.userId === quote.decidedBy && data.orders.some((order) => order.id === quote.orderId && order.customerId === customer.id)))) invalid('Invalid quotation decision actor')
   const occupied = { vehicleId: new Set<string>(), driverId: new Set<string>(), mechanicId: new Set<string>() }
   for (const trip of data.trips) {
     if (!data.orders.some((order) => order.id === trip.orderId)) invalid('Unknown trip order')

@@ -1,0 +1,45 @@
+@import './customer.css';
+.billing-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+.billing-grid.payment{grid-template-columns:minmax(0,1fr) 380px}
+.billing-charge{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #e3e6eb;font-size:14px}
+.billing-charge small{display:block;color:#6b7280;font-size:12px;margin-top:3px}
+.billing-charge.total{background:#f4f5f7;border:0;padding:16px 20px}
+.billing-charge.total strong:last-child{font-size:20px}
+.billing-validity{display:flex;align-items:center;gap:12px;background:#fef3c7;color:#b45309;border-radius:10px;padding:12px 16px;font-size:14px}
+.billing-validity img,.billing-location>img{width:18px;height:18px;flex-shrink:0}
+.billing-location{display:flex;gap:10px;align-items:start}
+.billing-pay-actions{display:flex;flex-direction:column;gap:16px;padding:20px}
+.billing-pay-actions>p:first-child{font-size:12px;color:#6b7280}
+.billing-total{font:500 28px/1.2 'JetBrains Mono',monospace;overflow-wrap:anywhere}
+.billing-pay-actions small{color:#6b7280;font-size:12px;line-height:18px}
+.billing-pay-actions .coord-button{width:100%}
+.billing-card-brands{font-size:10px;color:#6b7280}
+.billing-card-title{display:flex;align-items:center;gap:10px;font-size:13px}
+.billing-card-title img{width:20px;height:20px}
+.billing-security{display:flex;gap:10px;align-items:start;background:#f4f5f7;padding:12px;border-radius:8px;font-size:12px;line-height:18px;color:#6b7280}
+.billing-security img{width:16px;height:16px;flex-shrink:0;margin-top:2px}
+.billing-back{text-align:center;display:block;padding:8px}
+.billing-result{display:flex;flex-direction:column;align-items:center;gap:16px;max-width:560px;margin:40px auto 0;background:white;border:1px solid #e3e6eb;border-radius:16px;padding:40px 40px 32px}
+.billing-result-icon{width:64px;height:64px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.billing-result-icon.success{background:#dcfce7}.billing-result-icon.failed{background:#fee2e2}
+.billing-result-icon img{width:28px;height:28px}
+.billing-result h1{font-size:24px;line-height:32px;font-weight:700;text-align:center}
+.billing-result>p{color:#6b7280;font-size:14px;line-height:22px;text-align:center}
+.billing-result small{color:#6b7280;font-size:12px;text-align:center}
+.billing-result-facts{background:#f4f5f7;padding:14px 16px;border-radius:10px;width:100%}
+.billing-result-facts dl{gap:10px}
+.billing-result-actions{display:flex;gap:10px;width:100%;flex-wrap:wrap}
+.billing-result-actions>a{flex:1;white-space:normal;text-align:center}
+.billing-history-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start}
+.billing-history-table{min-width:650px}.billing-history-table th,.billing-history-table td{padding:12px 16px}
+.billing-history-table tr.selected{background:#e0e7ff}
+.billing-kpis .coord-kpi{display:flex;flex-direction:column;gap:16px;align-items:start}
+.billing-kpis .coord-kpi strong{font-size:28px;line-height:36px;overflow-wrap:anywhere}
+.billing-kpis .coord-icon img{width:20px;height:20px}
+.billing-history-grid .coord-actions{flex-wrap:wrap}.billing-history-grid select{max-width:160px}
+.billing-invoice-brand{display:flex;align-items:center;gap:10px;border-bottom:1px solid #e3e6eb;padding-bottom:20px}
+.billing-invoice-brand img{width:32px;height:32px}.billing-invoice-brand strong{font-size:14px}.billing-invoice-brand small{display:block;font-size:12px;color:#6b7280}
+.billing-invoice-page{max-width:560px;width:100%;margin:0 auto}
+@media(max-width:1200px){.billing-grid,.billing-grid.payment,.billing-history-grid{grid-template-columns:minmax(0,1fr) 300px}}
+@media(max-width:1000px){.billing-grid,.billing-grid.payment,.billing-history-grid{grid-template-columns:1fr}.billing-kpis .coord-kpi strong{font-size:23px}}
+@media(max-width:600px){.billing-result{padding:28px 20px;margin-top:12px}.billing-result-actions{flex-direction:column}.billing-charge{padding:14px 16px}.billing-kpis .coord-kpi strong{font-size:20px}}

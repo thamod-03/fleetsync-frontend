@@ -1,3 +1,5 @@
+import type { CustomerQuotation, CustomerPayment, InvoiceAvailability, PaymentInput, QuotationDecisionInput } from '../types/customer-billing.ts'
+import type { Payment } from '../types/domain.ts'
 import type { LoginInput, PasswordResetInput, RecoveryInput, RegistrationInput, StaffApplicationInput } from '../features/auth/auth-schemas.ts'
 import type { DemoDocument, User, WebRole } from '../types/domain.ts'
 import type { CoordinatorOverview, OrderDetails } from '../types/coordinator.ts'
@@ -17,6 +19,13 @@ export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getCustomerQuotations(): Promise<ServiceResult<CustomerQuotation[]>>
+  getCustomerQuotation(id: string): Promise<ServiceResult<CustomerQuotation>>
+  decideQuotation(input: QuotationDecisionInput): Promise<ServiceResult<FareQuotation>>
+  getCustomerPayments(): Promise<ServiceResult<CustomerPayment[]>>
+  getCustomerPayment(id: string): Promise<ServiceResult<CustomerPayment>>
+  getCustomerInvoice(id: string): Promise<ServiceResult<InvoiceAvailability>>
+  payQuotation(input: PaymentInput): Promise<ServiceResult<Payment>>
   getCustomerWorkspace(): Promise<ServiceResult<CustomerWorkspace>>
   getCustomerOrder(id: string): Promise<ServiceResult<CustomerOrderDetails>>
   createCustomerOrder(input: CreateCustomerOrderInput): Promise<ServiceResult<TransportOrder>>
