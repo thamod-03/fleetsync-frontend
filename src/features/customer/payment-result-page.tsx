@@ -9,6 +9,7 @@ import { customerDate, customerMoney } from './customer-format'
 import successIcon from '../../assets/customer-billing/success.svg'
 import failedIcon from '../../assets/customer-billing/failed.svg'
 import './billing.css'
+import { InvoiceDownload } from './invoice-download'
 
 export function CustomerPaymentResultPage({ expected }: { expected: 'Succeeded' | 'Failed' }) {
   const { paymentId = '' } = useParams()
@@ -23,8 +24,8 @@ export function PaymentResult({ data }: { data: CustomerPayment }) {
   const success = payment.status === 'Succeeded'
   if (payment.status === 'Pending') return <p role="status">Payment is pending.</p>
   return <div className="coord-page"><div className="billing-result"><div className={`billing-result-icon ${success ? 'success' : 'failed'}`}><img src={success ? successIcon : failedIcon} alt="" /></div><h1>Payment {success ? 'successful' : 'failed'}</h1><p>{success ? `Payment recorded for ${details.order.id}. No funds were transferred.` : payment.failureReason ?? 'The local payment attempt failed. No funds were transferred.'}</p><div className="billing-result-facts"><BillingFacts rows={[
-    ['Amount', customerMoney(payment.amount)], ['Paid with', payment.method], ['Reference', payment.reference ?? payment.id], ['Order', details.order.id], [success ? 'Date' : 'Attempt', customerDate(payment.completedAt ?? payment.createdAt)], ...(!success ? [['Reason', payment.failureReason ?? 'Not recorded'] as [string, string]] : []),
-  ]} /></div><div className="billing-result-actions">{success ? <><Link className="coord-button secondary" to={`/customer/payments/${payment.id}/invoice`}>View invoice</Link><Link className="coord-button" to="/customer/orders">View my orders</Link></> : <><Link className="coord-button secondary" to={`/customer/quotations/${quotation.id}`}>Back to quotation</Link><Link className="coord-button" to={`/customer/quotations/${quotation.id}/payment`}>Try again</Link></>}</div><Link className="coord-link" to="/customer/payments">Payment History</Link>{success && <small>No external payment or receipt email was sent.</small>}</div></div>
+    ['Amount', customerMoney(payment.amount)], ['Paid with', payment.cardLast4 ? `Card ending ${payment.cardLast4}` : payment.method], ['Reference', payment.reference ?? payment.id], ['Order', details.order.id], [success ? 'Date' : 'Attempt', customerDate(payment.completedAt ?? payment.createdAt)], ...(!success ? [['Reason', payment.failureReason ?? 'Not recorded'] as [string, string]] : []),
+  ]} /></div><div className="billing-result-actions">{success ? <><InvoiceDownload paymentId={payment.id} label="Download invoice" className="coord-button secondary" /><Link className="coord-button" to="/customer/orders">View my orders</Link></> : <><Link className="coord-button secondary" to={`/customer/quotations/${quotation.id}`}>Back to quotation</Link><Link className="coord-button" to={`/customer/quotations/${quotation.id}/payment`}>Try again</Link></>}</div><Link className="coord-link" to="/customer/payments">Payment History</Link>{success && <small>No external payment or receipt email was sent.</small>}</div></div>
 }
 export function CustomerInvoicePage() {
   const { paymentId = '' } = useParams()

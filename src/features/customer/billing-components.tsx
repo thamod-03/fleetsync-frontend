@@ -7,6 +7,7 @@ import { customerDate, customerMoney } from './customer-format'
 import pickup from '../../assets/customer-billing/pickup.svg'
 import destination from '../../assets/customer-billing/destination.svg'
 import logo from '../../assets/auth/logo.svg'
+import { InvoiceDownload } from './invoice-download'
 
 export function BillingBreadcrumb({ to, children, current }: { to: string; children: ReactNode; current: string }) {
   return <nav className="coord-breadcrumb" aria-label="Breadcrumb"><Link to={to}><ChevronLeft size={14} aria-hidden="true" />{children}</Link><span>/</span><span>{current}</span></nav>
@@ -21,6 +22,6 @@ export function QuotationOrder({ data }: { data: CustomerQuotation }) {
 export function InvoicePreview({ data, reason }: { data: CustomerPayment; reason: string }) {
   const { payment, details, quotation } = data
   return <CustomerCard title="Invoice preview" subtitle={`Selected: ${details.order.id}`} action={<CustomerStatus>Paid</CustomerStatus>}><div className="coord-card-body"><div className="billing-invoice-brand"><img src={logo} alt="" /><div><strong>FleetSync</strong><small>Payment record</small></div></div><BillingFacts rows={[
-    ['Reference', payment.reference ?? payment.id], ['Recorded', customerDate(payment.completedAt ?? payment.createdAt)], ['Customer', details.contact.name], ['Company', details.company.name], ['Order', <Link className="coord-link" to={`/customer/orders/${details.order.id}`}>{details.order.id}</Link>], ['Quotation', quotation.id], ['Route', `${details.order.origin} → ${details.order.destination}`], ['Total recorded', customerMoney(payment.amount)], ['Method', payment.method],
-  ]} /><p className="coord-helper" role="status">{reason}</p><button className="coord-button" disabled title={reason}>Download invoice (PDF)</button></div></CustomerCard>
+    ['Reference', payment.reference ?? payment.id], ['Recorded', customerDate(payment.completedAt ?? payment.createdAt)], ['Customer', details.contact.name], ['Company', details.company.name], ['Order', <Link className="coord-link" to={`/customer/orders/${details.order.id}`}>{details.order.id}</Link>], ['Quotation', quotation.id], ['Route', `${details.order.origin} → ${details.order.destination}`], ['Total recorded', customerMoney(payment.amount)], ['Method', payment.cardLast4 ? `Card ending ${payment.cardLast4}` : payment.method],
+  ]} /><p className="coord-helper" role="status">{reason}</p><InvoiceDownload paymentId={payment.id} /></div></CustomerCard>
 }

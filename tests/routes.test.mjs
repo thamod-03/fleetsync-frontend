@@ -33,6 +33,23 @@ test('configured routes resolve and shared pages render without a browser', asyn
     })))
     assert.match(header, /Alex Silva/)
     assert.match(header, /aria-haspopup="menu"/)
+    assert.match(header, /aria-label="Notifications"/)
+    for (const role of ['customer', 'coordinator']) {
+      const markup = renderToString(createElement(MemoryRouter, null, createElement(Header, {
+        user: { id: `user-${role}`, name: 'Account User', email: 'user@example.test', role }, expanded: false, onToggle: () => {},
+      })))
+      assert.match(markup, /aria-label="Notifications"/)
+    }
+    const { NotificationList } = await server.ssrLoadModule('/src/components/layout/notification-menu.tsx')
+    const notificationsMarkup = renderToString(createElement(NotificationList, { items: [
+      { id: 'one', userId: 'user-admin', message: 'First update', read: false, createdAt: '2026-10-21T10:00:00.000Z', simulated: true },
+      { id: 'two', userId: 'user-admin', message: 'Second update', read: true, createdAt: '2026-10-20T10:00:00.000Z', simulated: true },
+    ] }))
+    assert.equal((notificationsMarkup.match(/<li /g) ?? []).length, 2)
+    assert.match(notificationsMarkup, /Unread: /)
+    assert.match(notificationsMarkup, /Read: /)
+    assert.match(notificationsMarkup, /<time dateTime="2026-10-21T10:00:00.000Z"/)
+    assert.match(renderToString(createElement(NotificationList, { items: [] })), /No notifications yet/)
     const expectedFields = {
       '/login': ['Email address', 'Password', 'Keep me signed in', 'Forgot password?', 'Register as customer', 'Request staff account'],
       '/register': ['Company name', 'Business registration no.', 'Billing address', 'Full name', 'Mobile', 'Work email', 'Confirm password', 'terms of service'],
@@ -160,7 +177,7 @@ test('configured routes resolve and shared pages render without a browser', asyn
     const { ChatWorkspaceView } = await server.ssrLoadModule('/src/features/coordinator/chat-page.tsx')
     const chatMarkup = renderToString(createElement(MemoryRouter, null, createElement(ChatWorkspaceView, { data: chat.data })))
     for (const label of ['Order rooms', 'PEOPLE ON THIS ORDER', 'Harbor Paperworks', 'Write a message to', 'Send']) assert.ok(chatMarkup.includes(label))
-    assert.doesNotMatch(chatMarkup, /Seen|Delivered|WebSocket/)
+    assert.doesNotMatch(chatMarkup, /Seen|Delivered|WebSocket|Attach a file|attachment.svg/)
     const { MailWorkspace } = await server.ssrLoadModule('/src/features/coordinator/mail-page.tsx')
     const mailMarkup = renderToString(createElement(MailWorkspace, { data: mailbox.data }))
     for (const label of ['Inbox', 'Sent', 'Drafts', 'Compose', 'Reply all', 'Forward', 'No external email delivery']) assert.ok(mailMarkup.includes(label))
@@ -202,7 +219,31 @@ test('configured routes resolve and shared pages render without a browser', asyn
       assert.notEqual(matches.at(-1).route.path, '*')
       assert.equal(matches[1].route.element.props.role, 'customer')
     }
-    assert.equal(matchRoutes(routes, '/customer/chat').at(-1).route.path, '*')
+    for (const path of ['/customer/chat', '/customer/chat?orderId=order-001&conversationId=conversation-order-001-user-coordinator-user-customer']) {
+      const matches = matchRoutes(routes, path)
+      assert.notEqual(matches.at(-1).route.path, '*')
+      assert.equal(matches[1].route.element.props.role, 'customer')
+    }
+    const customerChatResult = await applicationServices.getChatWorkspace()
+    assert.ok(customerChatResult.ok)
+    const { CustomerChat } = await server.ssrLoadModule('/src/features/customer/chat-page.tsx')
+    const customerChatMarkup = renderToString(createElement(MemoryRouter, { initialEntries: ['/customer/chat?orderId=order-001'] }, createElement(CustomerChat, { data: customerChatResult.data }))).replace(/<!--.*?-->/g, '')
+    for (const label of ['Each of your orders has its own chat room', 'Order rooms', 'Search order number', 'PEOPLE ON THIS ORDER', 'Ravi Perera', 'Nilan Dias', 'Dev Senaka', 'View order', 'Send']) assert.ok(customerChatMarkup.includes(label), label)
+    assert.match(customerChatMarkup, /href="\/customer\/orders\/order-001"/)
+    assert.doesNotMatch(customerChatMarkup, /Seen|Delivered|Online|WebSocket|FleetSyncDemo1!|\/coordinator\/trips/)
+    const selectedUnassignedMarkup = renderToString(createElement(MemoryRouter, { initialEntries: ['/customer/chat?orderId=order-002'] }, createElement(CustomerChat, { data: { ...customerChatResult.data, rooms: customerChatResult.data.rooms.map((room) => room.order.id === 'order-002' ? { ...room, tripId: undefined, tripStatus: undefined, assignmentContext: undefined } : room) } })))
+    assert.doesNotMatch(selectedUnassignedMarkup, /Nilan Dias|Dev Senaka/)
+    const invalidChatMarkup = renderToString(createElement(MemoryRouter, { initialEntries: ['/customer/chat?orderId=not-owned&conversationId=private'] }, createElement(CustomerChat, { data: customerChatResult.data })))
+    assert.match(invalidChatMarkup, /unavailable to your account/)
+    assert.doesNotMatch(invalidChatMarkup, /<textarea/)
+    const invalidPairMarkup = renderToString(createElement(MemoryRouter, { initialEntries: ['/customer/chat?orderId=order-001&conversationId=private'] }, createElement(CustomerChat, { data: customerChatResult.data })))
+    assert.doesNotMatch(invalidPairMarkup, /<textarea/)
+    const emptyChatMarkup = renderToString(createElement(MemoryRouter, null, createElement(CustomerChat, { data: { ...customerChatResult.data, rooms: [] } })))
+    assert.match(emptyChatMarkup, /No conversations yet/)
+    assert.match(customerDetailMarkup, /href="\/customer\/chat\?orderId=order-001"/)
+    const { Sidebar } = await server.ssrLoadModule('/src/components/layout/sidebar.tsx')
+    const customerSidebar = renderToString(createElement(MemoryRouter, { initialEntries: ['/customer/chat'] }, createElement(Sidebar, { role: 'customer', expanded: true })))
+    for (const path of ['/customer', '/customer/orders', '/customer/orders/new', '/customer/quotations', '/customer/payments', '/customer/chat']) assert.ok(customerSidebar.includes('href="' + path + '"'))
     const quoteResult = await applicationServices.getCustomerQuotation('quotation-001')
     const paymentsResult = await applicationServices.getCustomerPayments()
     assert.ok(quoteResult.ok && paymentsResult.ok)
@@ -215,9 +256,10 @@ test('configured routes resolve and shared pages render without a browser', asyn
     for (const label of ['Fare quotation for order-001', 'Price breakdown', 'Your order', 'View payment']) assert.ok(quoteMarkup.includes(label))
     const pendingQuoteMarkup = renderCustomer(QuotationDetail, { data: { ...quoteResult.data, quotation: { ...quoteResult.data.quotation, status: 'Pending' }, details: { ...quoteResult.data.details, payments: [] } } })
     for (const label of ['Accept and pay', 'Decline quotation']) assert.ok(pendingQuoteMarkup.includes(label))
-    const paymentMarkup = renderCustomer(PaymentForm, { data: { ...quoteResult.data, details: { ...quoteResult.data.details, payments: [] } } })
-    for (const label of ['Pay by debit or credit card', 'Card number', 'Security code (CVV)', 'readonly', 'Payment summary', 'no funds are transferred', 'Confirm LKR']) assert.ok(paymentMarkup.includes(label))
-    assert.doesNotMatch(paymentMarkup, /name="(?:cardNumber|cvv|expiry)"|Fail next|FleetSyncDemo1!/)
+    const paymentCards = await applicationServices.getPaymentTestCards(); assert.ok(paymentCards.ok)
+    const paymentMarkup = renderCustomer(PaymentForm, { data: { ...quoteResult.data, details: { ...quoteResult.data.details, payments: [] } }, cards: paymentCards.data })
+    for (const label of ['Pay by debit or credit card', 'Card number', 'Security code (CVV)', 'name="cardNumber"', 'name="securityCode"', 'Payment summary', 'No funds are transferred', 'Fictional test card details', 'Pay LKR']) assert.ok(paymentMarkup.includes(label))
+    assert.doesNotMatch(paymentMarkup, /readonly|Fail next local payment|FleetSyncDemo1!/)
     const storedPayment = paymentsResult.data[0]
     const successMarkup = renderCustomer(PaymentResult, { data: storedPayment })
     assert.match(successMarkup, /Payment successful/)

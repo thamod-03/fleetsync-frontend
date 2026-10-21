@@ -8,6 +8,6 @@ export const roleHome: Record<WebRole, string> = { admin: '/admin', customer: '/
 export interface NavigationItem { label: string; to: string; icon: LucideIcon }
 export const navigation: Record<WebRole, NavigationItem[]> = {
   admin: [{ label: 'Dashboard', to: '/admin', icon: LayoutDashboard }],
-  customer: [{ label: 'Dashboard', to: '/customer', icon: LayoutDashboard }, { label: 'My orders', to: '/customer/orders', icon: Box }, { label: 'New order', to: '/customer/orders/new', icon: SquarePlus }, { label: 'Quotations', to: '/customer/quotations', icon: FileText }, { label: 'Payments', to: '/customer/payments', icon: CreditCard }],
+  customer: [{ label: 'Dashboard', to: '/customer', icon: LayoutDashboard }, { label: 'My orders', to: '/customer/orders', icon: Box }, { label: 'New order', to: '/customer/orders/new', icon: SquarePlus }, { label: 'Quotations', to: '/customer/quotations', icon: FileText }, { label: 'Payments', to: '/customer/payments', icon: CreditCard }, { label: 'Chat', to: '/customer/chat', icon: MessageCircle }],
   coordinator: [{ label: 'Dashboard', to: '/coordinator', icon: LayoutDashboard }, { label: 'Submitted orders', to: '/coordinator/orders', icon: Box }, { label: 'Trips', to: '/coordinator/trips', icon: Activity }, { label: 'Availability', to: '/coordinator/availability', icon: Truck }, { label: 'Chat', to: '/coordinator/chat', icon: MessageCircle }, { label: 'Mail', to: '/coordinator/mail', icon: Mail }, { label: 'Reports', to: '/coordinator/reports', icon: BarChart3 }],
 }

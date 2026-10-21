@@ -11,6 +11,9 @@ import { projectReport } from '../src/data/report-services.ts'
 import type { StoragePort } from '../src/lib/demo-storage.ts'
 import type { PaymentProvider } from '../src/services/payment-provider.ts'
 import { unavailableAdapter } from '../src/services/unavailable-adapter.ts'
+import { testPaymentCards } from '../src/data/payment-fixtures.ts'
+import { createCardFormSchema, matchTestCard } from '../src/types/customer-billing.ts'
+import { readFile } from 'node:fs/promises'
 
 const quoteInput = { orderId: 'order-002', vehicleType: 'Truck', charges: { distance: 100, load: 200, loading: 300, handling: 400, tolls: 500 }, validUntil: '2099-10-25T12:00:00Z', message: 'Recorded fare breakdown.' }
 function setup() {
@@ -149,7 +152,7 @@ test('invoice boundary requires a successful owned payment and never fabricates 
   const { services, id } = await accepted()
   const result = await services.payQuotation(paymentInput(id)); assert.ok(result.ok)
   const invoice = await services.getCustomerInvoice(result.data.id); assert.ok(invoice.ok)
-  assert.equal(invoice.data.available, false); assert.equal(invoice.data.transaction.payment.id, result.data.id)
+  assert.equal(invoice.data.available, true); assert.match(invoice.data.reason, /No tax amounts/); assert.equal(invoice.data.transaction.payment.id, result.data.id)
   assert.equal(invoice.data.transaction.quotation.id, id)
   assert.equal((await services.getCustomerInvoice('missing')).ok, false)
 })
@@ -206,4 +209,50 @@ test('notification preparation errors do not commit quotation decisions and rese
   while (!finish) await new Promise((resolve) => setTimeout(resolve, 1))
   await context.services.resetDemoData(); finish()
   assert.equal((await payment).ok, false); assert.deepEqual(context.store.getState().data, createSeedData())
+})
+
+test('fictional card fields validate both provided instruments and reject unrelated card details', () => {
+  const schema = createCardFormSchema(testPaymentCards)
+  for (const card of testPaymentCards) {
+    const input = { nameOnCard: card.name, cardNumber: card.number, expiry: card.expiry, securityCode: card.securityCode }
+    assert.ok(schema.safeParse(input).success)
+    assert.equal(matchTestCard(testPaymentCards, input)?.id, card.id)
+    for (const change of [{ nameOnCard: '' }, { cardNumber: 'invalid number' }, { expiry: '01 / 00' }, { securityCode: '000' }]) assert.equal(schema.safeParse({ ...input, ...change }).success, false)
+  }
+})
+
+test('declined fixture reaches Failed, successful fixture retries safely, and no raw card fields persist', async () => {
+  const { store, storage, services, id } = await accepted()
+  const failed = await services.payQuotation({ ...paymentInput(id), instrumentId: 'test-decline' }); assert.ok(failed.ok)
+  assert.equal(failed.data.status, 'Failed'); assert.equal(failed.data.cardLast4, '0002')
+  assert.equal((await services.downloadCustomerInvoice(failed.data.id)).ok, false)
+  const paid = await services.payQuotation({ ...paymentInput(id), instrumentId: 'test-success' }); assert.ok(paid.ok)
+  assert.equal(paid.data.status, 'Succeeded'); assert.equal(paid.data.cardLast4, '4421')
+  const snapshot = JSON.stringify(createDemoStore(storage).getState().data)
+  for (const card of testPaymentCards) { assert.equal(snapshot.includes(card.number), false); assert.equal(snapshot.includes(card.number.replaceAll(' ', '')), false); assert.equal(snapshot.includes(card.name), false) }
+  for (const field of ['cardNumber', 'securityCode', 'nameOnCard', 'expiry']) assert.equal(snapshot.includes(`"${field}"`), false)
+  assert.equal((await services.payQuotation({ ...paymentInput(id), instrumentId: 'unsupported' } as PaymentParameters)).ok, false)
+  assert.ok(demoDatasetSchema.safeParse(store.getState().data).success)
+})
+
+type PaymentParameters = Parameters<ReturnType<typeof createMockServices>['payQuotation']>[0]
+
+test('invoice download produces a real PDF only for an owned successful payment', async (context) => {
+  const { store, services, id } = await accepted()
+  const paid = await services.payQuotation({ ...paymentInput(id), instrumentId: 'test-success' }); assert.ok(paid.ok)
+  context.mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    const url = input instanceof Request ? new URL(input.url) : new URL(input)
+    assert.ok(url.pathname.endsWith('inter-400.ttf') || url.pathname.endsWith('inter-700.ttf'))
+    return new Response(await readFile(url))
+  })
+  const result = await services.downloadCustomerInvoice(paid.data.id); assert.ok(result.ok)
+  assert.equal(Buffer.from(result.data.bytes).subarray(0, 5).toString(), '%PDF-')
+  assert.ok(result.data.bytes.length > 10000); assert.ok(result.data.filename.endsWith('.pdf'))
+  const notices = store.getState().data.notifications.length
+  assert.ok((await services.downloadCustomerInvoice(paid.data.id)).ok)
+  assert.equal(store.getState().data.notifications.length, notices)
+  store.setState({ sessionUserId: 'user-coordinator' })
+  assert.equal((await services.downloadCustomerInvoice(paid.data.id)).ok, false)
+  store.setState({ sessionUserId: 'user-customer' }); await services.resetDemoData()
+  assert.equal((await services.downloadCustomerInvoice(paid.data.id)).ok, false)
 })

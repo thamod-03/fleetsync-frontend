@@ -42,11 +42,11 @@ test('production artifacts exclude mock authentication and utilities even with d
         const bundles = Array.isArray(result) ? result : [result]
         const chunks = bundles.flatMap((bundle) => bundle.output).filter((item) => item.type === 'chunk')
         const code = chunks.map((chunk) => chunk.code).join('\n')
-        for (const forbidden of ['FleetSyncDemo1!', '/__development', 'Development utilities', 'Reset Demo Data', 'alex@fleetsync.example']) {
+        for (const forbidden of ['FleetSyncDemo1!', '/__development', 'Development utilities', 'Reset Demo Data', 'alex@fleetsync.example', '0000 0000 0000 4421', 'MAYA TEST']) {
           assert.equal(code.includes(forbidden), false, `${environment} build contains ${forbidden}`)
         }
         const modules = chunks.flatMap((chunk) => Object.keys(chunk.modules)).map((path) => path.replaceAll('\\', '/'))
-        for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/customer-services.ts', '/src/data/customer-billing-services.ts', '/src/data/local-payment-provider.ts', '/src/data/communication-services.ts', '/src/data/communication-projections.ts', '/src/data/message-notifications.ts', '/src/data/report-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
+        for (const forbidden of ['/src/development/', '/src/data/auth-services.ts', '/src/data/customer-services.ts', '/src/data/customer-billing-services.ts', '/src/data/local-payment-provider.ts', '/src/data/payment-fixtures.ts', '/src/data/communication-services.ts', '/src/data/communication-projections.ts', '/src/data/message-notifications.ts', '/src/data/report-services.ts', '/src/data/coordinator-services.ts', '/src/data/trip-services.ts', '/src/data/trip-management-services.ts', '/src/data/trip-projections.ts', '/src/data/trip-notifications.ts', '/src/data/order-projections.ts', '/src/data/quotation-notifications.ts', '/src/data/mock-services.ts', '/src/data/seed.ts', '/src/store/demo-store.ts']) {
           assert.equal(modules.some((path) => path.includes(forbidden)), false, `${environment} build imports ${forbidden}`)
         }
         assert.ok(code.includes('This service is currently unavailable. Please try again later.'))

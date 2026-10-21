@@ -2,7 +2,10 @@ import { z } from 'zod'
 import type { ChatMessage, TransportOrder, User } from './domain.ts'
 
 const id = z.string().min(1)
-export const conversationSchema = z.object({ id, orderId: id, coordinatorId: id, participantId: id })
+export const conversationSchema = z.union([
+  z.object({ id, orderId: id, coordinatorId: id, participantId: id, kind: z.never().optional(), customerUserId: z.never().optional() }),
+  z.object({ id, orderId: id, kind: z.literal('CustomerStaff'), customerUserId: id, participantId: id, coordinatorId: z.never().optional() }),
+])
 export const mailMessageSchema = z.object({
   id, senderId: id, recipientIds: z.array(id), subject: z.string().max(200), body: z.string().max(20000),
   createdAt: z.iso.datetime(), status: z.enum(['Draft', 'Stored locally']),
@@ -16,11 +19,15 @@ export const composeMailSchema = z.object({
   replyToId: id.optional(), forwardedFromId: id.optional(),
 })
 export type Conversation = z.infer<typeof conversationSchema>
+export const conversationOwnerId = (conversation: Conversation): string => conversation.kind === 'CustomerStaff' ? conversation.customerUserId : conversation.coordinatorId
 export type MailMessage = z.infer<typeof mailMessageSchema>
 export type ComposeMailInput = z.infer<typeof composeMailSchema>
 export type SendChatInput = z.infer<typeof sendChatSchema>
-export interface ConversationView extends Conversation { peer: User; messages: ChatMessage[]; unread: number }
-export interface OrderRoom { order: TransportOrder; company: string; tripId?: string; tripStatus?: string; conversations: ConversationView[] }
+export type ConversationView = Conversation & { peer: User; messages: ChatMessage[]; unread: number }
+export interface OrderRoom {
+  order: TransportOrder; company: string; tripId?: string; tripStatus?: string; conversations: ConversationView[]
+  assignmentContext?: { driver: User | null; mechanic: User | null; vehicleRegistration?: string; actualStartAt?: string }
+}
 export interface ChatWorkspace { user: User; rooms: OrderRoom[] }
 export interface Mailbox { user: User; users: User[]; messages: MailMessage[] }
 export type MailFlag = 'read' | 'starred' | 'trash'

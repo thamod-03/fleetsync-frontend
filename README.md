@@ -1,5 +1,50 @@
 # FleetSync frontend
 
+## Customer payment, PDF invoice and Chat follow-up
+
+The Customer payment form now has working name, card number, expiry and CVV fields matching Figma `161:5978`. Only the fictional cards below are accepted. Open **Fictional test card details**, use a card to fill the form (or enter its values), then press Pay. No actual payment request is sent. The form keeps card data in memory and submits only a test instrument ID; saved payments contain the instrument ID and last four digits, never full numbers, expiry, name-on-card or CVV.
+
+| Outcome | Name | Fictional number | Expiry | CVV |
+| --- | --- | --- | --- | --- |
+| Success | MAYA TEST | 0000 0000 0000 4421 | 12 / 30 | 123 |
+| Failure | MAYA TEST | 0000 0000 0000 0002 | 12 / 30 | 999 |
+
+These deliberately non-bank numbers are fixtures, not real financial credentials. They are supplied only by the gated local/opted-in Preview adapter; Production excludes their module and cannot process payments. Current Preview configuration and Production authentication restrictions are unchanged.
+
+Use an unpaid accepted quotation: Customer creates an order, Coordinator publishes its quote, then Customer opens Quotations and Accept and pay. The failure card opens the persisted Failed screen; Try again returns to payment, where the success card records a successful retry. Existing success/idempotency guards prevent a second payment for the same obligation. The original seeded order is already paid, so its payment cannot be repeated; a new order/quotation is the normal way to exercise the full flow. No payment prerequisite is added to trip creation.
+
+**Download invoice** now downloads a real PDF from Payment Success and the Invoice Preview in Payments/history or the invoice route. It uses the authorized saved payment, quotation breakdown, order, customer and company. The document embeds the existing Inter fonts, wraps long fields, paginates and contains no invented tax or issuer-registration data. It is explicitly a non-tax payment invoice for a local simulation, not a legal tax invoice or evidence of an external charge. Existing undated payment records retain Not recorded rather than receiving guessed dates. The generator is lazy-loaded through the invoice service boundary. jsPDF is the sole added application dependency; temporary PDFium tooling was used only for rendering verification.
+
+Customer Chat (`164:7038`) now allows selecting and messaging the actual assigned Driver/Mechanic as well as authorized Coordinators. Each thread is private to its two participants. Existing Coordinator conversations and IDs remain intact; new CustomerStaff pairs use the same message store, validation, notifications and persistence. Coordinator–staff history is not exposed to Customers, and Customer–staff history is not exposed to Coordinators. An order without a trip has no staff threads. Current assignment eligibility is rechecked on send/read; historical membership after reassignment remains governed by the existing projection policy and needs a final team decision. Driver/Mechanic web/mobile UIs are not added; the shared service supports their future replies. Attachments and real-time/remote delivery remain unavailable.
+
+Figma was re-inspected read-only: Quotation `160:5892`, Payment `161:5978`, Success `161:6347`, Failed `161:6668`, Chat `164:7038`. No production/deployment/Figma changes or Git commit are part of this work. This section supersedes earlier statements that card fields are read-only, invoice download is unavailable, and Customer–staff messaging is disabled.
+
+Dependency audit: npm reports seven pre-existing high-severity advisories through the shadcn CLI/ts-morph/glob dependency tree; affected package versions match the original lockfile. No jsPDF advisory was reported. No force fix or unrelated major-version change was applied; that existing dependency tree still needs a separate maintenance review.
+
+Follow-up verification: build and lint passed; all **91 tests** passed, including fixture success/failure/retry, real PDF bytes and ownership checks, Customer–assigned-staff conversations, and the existing Coordinator/Authentication/Production–Preview regressions. The invoice PDF was rendered and visually checked; interactive card entry, native browser download and responsive/chat interaction remain manual browser checks.
+
+## Customer Batch 03 — Chat and supported module navigation
+
+Customer Chat is available at `/customer/chat`, with `orderId` and optional `conversationId` query parameters for deep links. Dashboard trip cards, Order Details and Fare Quotation Open chat actions select the matching owned order. All six primary Customer navigation entries now work: Dashboard, My orders, New order, Quotations, Payments and Chat. Existing payment results, history and invoice preview routes are preserved.
+
+Read-only Figma references: Customer Chat on Screens `164:7038` and Prototype `199:8177`, Order Details `158:5805`, and Shared Profile & settings `119:3585`. The Chat references share the 320px order list, 260px people panel, 820px conversation container, typography and message layout. Prototype additionally includes a Mechanic absent from Screens. Screens supplies the primary layout; actual assigned Driver and Mechanic context is displayed, consistent with the shared model and Prototype. Screens/Prototype inventories contain the same twelve Customer screen states; the eleven previously implemented states remain unchanged.
+
+Chat reuses `getChatWorkspace`, `getConversation`, `sendChatMessage`, `markConversationRead`, existing conversation/message IDs, notification preparation and the same canonical store. No Customer-only repository or service is introduced. The message pane is now shared with Coordinator Chat. Order search, selection, history, composer validation, saved timestamps, local unread counts, retry identifiers and responsive scrolling are supported. Unknown/unowned order or conversation links show an unavailable selection instead of silently opening another thread. Messages and notices survive refresh/persona switching; Reset Demo Data restores the existing seed.
+
+Current conversations are private Coordinator–participant pairs. Customers can message authorized Coordinators for their own person-owned orders, and can see actual assigned staff context. Direct Customer–Driver/Mechanic messaging has no current service/permission contract; those cards are visibly unavailable and never expose Coordinator–staff message history. No staff are guessed for orders without assignments. All existing Coordinator access rules remain intact. A chat save/read started before an account switch is rejected if the session changes before commit, avoiding accidental sender impersonation.
+
+Figma Seen/remote receipts are represented only by truthful Stored locally state; no online status, fake WebSocket or push/email delivery is added. The designed attachment icon is retained but disabled because attachment handling is not supported by the chat contract. Profile & settings is a shared frame with change-approval/security workflows; it remains unavailable pending approved contracts. Formal tax invoices/PDFs and real payment processing remain unavailable as documented in Batch 02. No new refund, quotation-revision, approval or staff-chat workflow is invented. These are outstanding capabilities, not a claim of complete backend integration.
+
+Created: `src/features/customer/chat-page.tsx`, `chat.css`; `src/components/chat/conversation-pane.tsx`; `src/assets/customer-chat/{search,info,attachment}.svg`; `tests/customer-chat.test.ts`.
+
+Modified: `src/features/coordinator/chat-page.tsx` (shared pane extraction); `src/data/communication-services.ts`, `communication-projections.ts`; `src/types/communications.ts`; Customer `customer-components.tsx`, `order-details-page.tsx`, `quotation-page.tsx`; `src/components/layout/sidebar.tsx`; `src/routes/router.tsx`, `navigation.ts`; `tests/routes.test.mjs`; `package.json` (test command); `README.md`; `docs/ASSUMPTIONS.md`.
+
+Only optional projected assignment context was added to OrderRoom. No stored domain/schema change, new collection, migration, storage version or reset is needed. Existing Authentication, trip/quotation/payment policies, environment gates and Vercel files/settings are unchanged. No dependency installation, Figma edits, deployment or Git commit is part of this batch.
+
+Manual check: open an order as Customer and use Open chat; send a message, switch to Coordinator in the same browser and reply in that exact order/person pair. Return as Customer, check the reply/unread state, refresh and verify history. Try an unowned order or Coordinator–staff conversation identifier, empty/oversized messages, retry, search/no matches and Reset Demo Data. Compare 1440px with Figma and check 768px/375px scrolling, keyboard focus, composer resize and auto-scroll. Native browser checks remain required; automated tests cover service authorization, both directions, sender derivation, retries/notifications, ordering, reload/reset, routes/rendered states and all prior regressions.
+
+Batch 03 verification: `npm run build` and `npm run lint` passed; `npm test` passed all **87 tests**, including nine new Customer Chat service tests and expanded route/render checks. Existing Vite native-config and large-bundle warnings remain. Browser inventory was empty, so no interactive browser verification is claimed.
+
 ## Customer Batch 02 ? Quotations and Payments
 
 Read-only Figma references: Fare quotation `160:5892`, Payment `161:5978`, Success `161:6347`, Failed `161:6668`, Payment history `162:6243`, including its Invoice preview `162:6737`. No separate invoice document, decline dialog, processing state, or mobile frame was found on the Screens page. Those states reuse existing FleetSync components and responsive conventions.
@@ -244,3 +289,5 @@ Cancellation provisionally follows the requested earlier UML rule: Draft, Assign
 The Change assignment controls are visibly disabled while permitted reassignment statuses and old-resource release rules remain undefined. Chat, Reports, Internal Mail and trip-note editing remain outside this batch. No real push/email delivery is claimed.
 
 Local check: choose Coordinator at `/__development`, open Trips and an Assigned trip, then cancel with a reason. Verify Cancelled status, audit/notification records, retained reservations and refresh/reset behavior. Completion requires an upstream In Progress trip with a recorded starting odometer; the original Assigned seed is preserved and no fake Driver start action is added. Automated fixtures exercise that completion scenario. Browser checks remain for visual matching, dialogs/focus, validation, responsive layouts and pagination.
+
+The shared header provides per-account notifications for Administrator, Customer and Coordinator. New unread notifications update the bell count through the shared state subscription. The menu lists newest entries first with timestamps; Mark all as read persists only the signed-in account?s read state. These remain local records, without remote push delivery.

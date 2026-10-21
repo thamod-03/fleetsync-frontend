@@ -29,6 +29,24 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
     ...createReportServices(store, delayMs),
     ...createCustomerServices(store, delayMs),
     ...createCustomerBillingServices(store, delayMs),
+    async getNotifications() {
+      const actorId = currentUser()?.id
+      await wait()
+      const actor = currentUser()
+      if (!actor || actor.id !== actorId || actor.accountStatus === 'Pending') return failure('Sign in to view notifications.')
+      return { ok: true as const, data: structuredClone(store.getState().data.notifications.filter((item) => item.userId === actor.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id))) }
+    },
+    async markAllNotificationsRead() {
+      const actorId = currentUser()?.id
+      await wait()
+      const actor = currentUser()
+      if (!actor || actor.id !== actorId || actor.accountStatus === 'Pending') return failure('Sign in to update notifications.')
+      const { data } = store.getState()
+      if (data.notifications.some((item) => item.userId === actor.id && !item.read)) {
+        store.setState({ data: { ...data, notifications: data.notifications.map((item) => item.userId === actor.id && !item.read ? { ...item, read: true } : item) } })
+      }
+      return { ok: true as const, data: null }
+    },
     async signIn(role: WebRole) {
       await wait()
       const user = store.getState().data.users.find((item) => item.role === role && item.accountStatus !== 'Pending')

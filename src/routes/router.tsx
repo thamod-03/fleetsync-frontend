@@ -1,3 +1,4 @@
+import { CustomerChatPage } from '../features/customer/chat-page'
 import { CustomerQuotationsPage, CustomerQuotationPage } from '../features/customer/quotation-page'
 import { CustomerPaymentPage } from '../features/customer/payment-page'
 import { CustomerPaymentResultPage, CustomerInvoicePage } from '../features/customer/payment-result-page'
@@ -53,6 +54,7 @@ export const routes: RouteObject[] = [{
       { path: 'quotations/:quotationId', element: <CustomerQuotationPage /> },
       { path: 'quotations/:quotationId/payment', element: <CustomerPaymentPage /> },
       { path: 'payments', element: <CustomerPaymentHistoryPage /> },
+      { path: 'chat', element: <CustomerChatPage /> },
       { path: 'payments/:paymentId/success', element: <CustomerPaymentResultPage expected="Succeeded" /> },
       { path: 'payments/:paymentId/failed', element: <CustomerPaymentResultPage expected="Failed" /> },
       { path: 'payments/:paymentId/invoice', element: <CustomerInvoicePage /> },
