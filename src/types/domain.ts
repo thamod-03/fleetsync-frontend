@@ -27,7 +27,10 @@ export const customerSchema = z.object({ ...record, userId: id, companyId: id, m
 export const customerRegistrationSchema = z.object({ ...record, customerId: id, status: z.literal('Pending'), createdAt: timestamp })
 export const staffSubmissionSchema = z.object({
   ...record, fullName: z.string(), nicNumber: z.string().min(1), email: z.email(), mobile: z.string(),
-  role: z.enum(staffRoles), documents: z.array(demoDocumentSchema), status: z.literal('Pending'), createdAt: timestamp,
+  role: z.enum(staffRoles), documents: z.array(demoDocumentSchema), status: z.enum(['Pending', 'Approved', 'Rejected']), createdAt: timestamp,
+  revision: z.number().int().nonnegative().optional(), internalNote: z.string().max(2000).optional(),
+  reviewedBy: id.optional(), reviewedAt: timestamp.optional(), userId: id.optional(),
+  rejectionReason: z.string().optional(), applicantMessage: z.string().optional(),
 })
 export const loginAttemptSchema = z.object({ ...record, failures: z.number().int().nonnegative().max(5), lockedUntil: z.number().nonnegative() })
 const resource = { ...record, available: z.boolean() }
@@ -99,6 +102,13 @@ export const demoDatasetSchema = datasetShape.superRefine((data, context) => {
     if (new Set(records.map((item) => item.id)).size !== records.length) invalid('Duplicate record IDs')
   }
   const userHasRole = (userId: string, role: UserRole) => data.users.some((user) => user.id === userId && user.role === role)
+  for (const application of data.staffApplications) {
+    if (application.reviewedBy && !userHasRole(application.reviewedBy, 'admin')) invalid('Invalid application reviewer')
+    if (application.userId && (application.status !== 'Approved' || !userHasRole(application.userId, application.role))) invalid('Invalid application account')
+    if (application.status !== 'Pending' && (!application.reviewedBy || !application.reviewedAt)) invalid('Missing application decision history')
+    if (application.status === 'Approved' && !application.userId) invalid('Missing approved application account')
+    if (application.status === 'Rejected' && !application.rejectionReason?.trim()) invalid('Missing application rejection reason')
+  }
   if (new Set(data.users.map((user) => user.email.toLowerCase())).size !== data.users.length) invalid('Duplicate user emails')
   if (data.customerRegistrations.some((registration) => !data.customers.some((customer) => customer.id === registration.customerId && data.users.some((user) => user.id === customer.userId && user.accountStatus === 'Pending')))) invalid('Invalid pending registration')
   for (const customer of data.customers) {

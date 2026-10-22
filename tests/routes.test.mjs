@@ -5,6 +5,45 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { matchRoutes, MemoryRouter } from 'react-router'
 
+test('Administrator Batch 01 routes and designed user/application views render shared records', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
+  try {
+    const { routes } = await server.ssrLoadModule('/src/routes/router.tsx')
+    const { demoStore } = await server.ssrLoadModule('/src/store/demo-store.ts')
+    const { createMockServices } = await server.ssrLoadModule('/src/data/mock-services.ts')
+    const services = createMockServices(demoStore, 0)
+    demoStore.setState({ sessionUserId: 'user-admin' })
+    const submitted = await services.submitStaffApplication({ fullName: 'Test Coordinator', nicNumber: 'SYNTHETIC-NIC', email: 'new.coordinator@example.test', mobile: '077 123 4567', role: 'coordinator', documents: [{ kind: 'nic', name: 'Synthetic-NIC.pdf', sizeBytes: 1200, format: 'pdf', simulated: true }], detailsConfirmed: true })
+    assert.ok(submitted.ok)
+    const workspace = await services.getAdminWorkspace(); assert.ok(workspace.ok)
+    const application = await services.getAdminApplication(submitted.data.applicationId); assert.ok(application.ok)
+    for (const path of ['/admin/users', '/admin/users/user-driver-1', '/admin/applications', `/admin/applications/${application.data.id}`]) {
+      const matches = matchRoutes(routes, path)
+      assert.notEqual(matches.at(-1).route.path, '*')
+      assert.equal(matches[1].route.element.props.role, 'admin')
+    }
+    const { AdminDashboard } = await server.ssrLoadModule('/src/features/admin/dashboard-page.tsx')
+    const { AdminUsers } = await server.ssrLoadModule('/src/features/admin/users-page.tsx')
+    const { AdminApplications } = await server.ssrLoadModule('/src/features/admin/applications-page.tsx')
+    const { ApplicationReview } = await server.ssrLoadModule('/src/features/admin/application-review-page.tsx')
+    const render = (component, data, path = '/admin') => renderToString(createElement(MemoryRouter, { initialEntries: [path] }, createElement(component, { data })))
+    const dashboard = render(AdminDashboard, workspace.data)
+    for (const label of ['Active users', 'Pending applications', 'Users by role', 'Recent audit activity', 'Test Coordinator']) assert.ok(dashboard.includes(label))
+    const users = render(AdminUsers, workspace.data, '/admin/users')
+    for (const label of ['User accounts', 'Search by name or email', 'All roles', 'All statuses', 'View profile']) assert.ok(users.includes(label))
+    const companies = render(AdminUsers, workspace.data, '/admin/users?tab=companies')
+    assert.match(companies, /Customer contacts/)
+    const applications = render(AdminApplications, workspace.data)
+    for (const label of ['Applications', 'Requested role', 'Test Coordinator', 'Pending review', 'Review']) assert.ok(applications.includes(label))
+    const review = render(ApplicationReview, application.data)
+    for (const label of ['Applicant details', 'Synthetic-NIC.pdf', 'Approve', 'Reject', 'Internal note', 'Save note', 'verification not connected']) assert.ok(review.includes(label), label)
+    assert.doesNotMatch(review, /Email address verified|stored securely|University demo/)
+    const empty = render(AdminApplications, { ...workspace.data, applications: [] })
+    assert.match(empty, /No applications found/)
+    for (const path of ['/admin/vehicles', '/admin/mail', '/admin/audit']) assert.equal(matchRoutes(routes, path).at(-1).route.path, '*')
+  } finally { await server.close() }
+})
+
 test('configured routes resolve and shared pages render without a browser', async () => {
   const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
   try {

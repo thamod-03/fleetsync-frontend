@@ -1,3 +1,4 @@
+import type { AdminWorkspace, AdminUser, AdminApplication, ApplicationNoteInput, ApplicationDecisionInput } from '../types/admin.ts'
 import type { CustomerQuotation, CustomerPayment, InvoiceAvailability, InvoiceDocument, TestPaymentCard, PaymentInput, QuotationDecisionInput } from '../types/customer-billing.ts'
 import type { Payment } from '../types/domain.ts'
 import type { LoginInput, PasswordResetInput, RecoveryInput, RegistrationInput, StaffApplicationInput } from '../features/auth/auth-schemas.ts'
@@ -19,6 +20,11 @@ export type WebUser = User & { role: WebRole }
 export type LoginResult = ServiceResult<WebUser> & { attemptsLeft?: number; lockedUntil?: number }
 export interface UploadFile { name: string; size: number; type: string }
 export interface ApplicationServices {
+  getAdminWorkspace(): Promise<ServiceResult<AdminWorkspace>>
+  getAdminUser(id: string): Promise<ServiceResult<AdminUser>>
+  getAdminApplication(id: string): Promise<ServiceResult<AdminApplication>>
+  saveApplicationNote(input: ApplicationNoteInput): Promise<ServiceResult<null>>
+  decideStaffApplication(input: ApplicationDecisionInput): Promise<ServiceResult<AdminApplication>>
   getNotifications(): Promise<ServiceResult<import('../types/domain.ts').Notification[]>>
   markAllNotificationsRead(): Promise<ServiceResult<null>>
   getPaymentTestCards(): Promise<ServiceResult<TestPaymentCard[]>>

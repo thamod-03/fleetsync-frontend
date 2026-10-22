@@ -1,3 +1,4 @@
+import { createAdminServices } from './admin-services.ts'
 import { resetLocalPaymentProvider } from './local-payment-provider.ts'
 import { createCustomerBillingServices } from './customer-billing-services.ts'
 import { createTripServices } from './trip-services.ts'
@@ -22,6 +23,7 @@ export function createMockServices(store: DemoStore, delayMs = 180) {
   const failure = (error: string): { ok: false; error: string } => ({ ok: false, error })
   return {
     ...createAuthServices(store, delayMs),
+    ...createAdminServices(store, delayMs),
     ...createCoordinatorServices(store, delayMs),
     ...createTripServices(store, delayMs),
     ...createTripManagementServices(store, delayMs),

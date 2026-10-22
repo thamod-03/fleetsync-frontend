@@ -1,5 +1,22 @@
 # FleetSync frontend
 
+## Fleet Administrator Batch 01
+
+Administrator routes now include `/admin` (Dashboard), `/admin/users` (All users, Driver filter and separate Customer companies), `/admin/users/:userId` (profile drawer), `/admin/applications` and `/admin/applications/:applicationId` (review). Search, role/status filters, pagination and CSV exports use shared records. Dashboard totals, role bars and recent audit activity update through the existing application subscription.
+
+Submit a synthetic Staff Account Application at `/apply/staff`, then sign in as Administrator in the same browser. Open Applications, review its fields/document metadata, save an internal note and approve or reject. Approval atomically creates one Active account with exactly the requested role and the required Driver/Mechanic profile, retains the application decision, records audit events and stores a local account notification. Rejection requires a reason and retains the application without creating an account. Latest-version checks reject stale, repeated or conflicting decisions. Refresh preserves records; Reset Demo Data restores the canonical seeds.
+
+New Driver/Mechanic profiles start unavailable pending an approved onboarding/availability policy; existing assignments and resource-release rules are unchanged. An approved Coordinator can use the existing fictional fixture password in local/explicit Preview only. No real password, account setup token, verification or email is created. Production continues failing closed, and no deployment configuration changed.
+
+Role conversion, direct Create user, deactivation/reactivation, editable permissions, profile editing and customer-registration activation remain disabled while their contracts/policies are unresolved. Customer registration is visible as a person linked to a company, but is never silently approved. Document View shows metadata availability, never identity-document content or a fabricated Verified state. Account setup and email controls truthfully report the missing integration. Vehicle Management, Reference Data, Change Approvals, standalone Audit Log and Internal Mail UI remain outside this batch.
+
+Verification: `npm run build`, `npm run lint`, `npm test`. Administrator tests cover authorization, filtering, Authentication submission visibility, all three staff specializations, decision validation/concurrency, note versioning, atomic notification failure, account/audit relationships, persistence/reset, customer-policy boundaries and export escaping. Route/server-render tests cover the new pages alongside all existing module and Preview/Production regressions. Interactive visual/focus/mobile checks remain manual when no browser is connected.
+
+Created files: `src/types/admin.ts`, `src/data/admin-services.ts`; `src/features/admin/admin-components.tsx`, `admin-format.ts`, `admin-export.ts`, `admin.css`, `users-page.tsx`, `user-profile.tsx`, `applications-page.tsx`, `application-review-page.tsx`, `application-decision-dialog.tsx`; five local Figma icons in `src/assets/admin/`; `tests/admin.test.ts`.
+
+Modified: the existing Administrator dashboard; shared domain/application service contracts, facade and adapters; mock factory composition; role navigation/router and shared shell/header/sidebar for Administrator integration; test command, route/render tests and Production artifact exclusion checks. No dependencies, Vercel settings, Authentication form implementations or Customer/Coordinator workflows changed.
+
+
 ## Customer payment, PDF invoice and Chat follow-up
 
 The Customer payment form now has working name, card number, expiry and CVV fields matching Figma `161:5978`. Only the fictional cards below are accepted. Open **Fictional test card details**, use a card to fill the form (or enter its values), then press Pay. No actual payment request is sent. The form keeps card data in memory and submits only a test instrument ID; saved payments contain the instrument ID and last four digits, never full numbers, expiry, name-on-card or CVV.
@@ -223,7 +240,7 @@ store/ and lib/         Existing Zustand store and validated persistence
 
 Components call `applicationServices`; they do not import mock factories, fixture credentials or localStorage. Existing hooks subscribe through the active service adapter. Startup initializes the adapter before rendering so saved local sessions retain the existing redirect behavior. Production does not import the seed/store and never trusts a localStorage session.
 
-Development retains `fleetsync-demo-v1` and backward-compatible snapshot loading. Customer registrations create separate linked Pending user/customer/company records. Staff applications remain independent Pending submissions; no automatic approval rule is added. Pending users cannot log in. Admin can read submissions through the existing `mockServices.getPendingApplications()` for future approval UI work. Logout and persona switching retain records; Reset Demo Data restores seed data.
+Development retains `fleetsync-demo-v1` and backward-compatible snapshot loading. Customer registrations create separate linked Pending user/customer/company records. Staff applications remain independent submissions until an explicit Administrator decision. The Batch 01 review UI now records approval/rejection and creates the permitted staff account on approval; there is no automatic approval. Customer registrations remain Pending while their activation policy is unresolved. Pending users cannot log in. Logout and persona switching retain records; Reset Demo Data restores seed data.
 
 Passwords are validated in memory and never persisted. Local credential login still uses the public fixture password above. Keep me signed in retains the existing simplified local behavior: checked persists the session, unchecked clears it on page reload. This is not a production session mechanism.
 

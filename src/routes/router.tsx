@@ -1,3 +1,6 @@
+import { AdminUsersPage } from '../features/admin/users-page'
+import { AdminApplicationsPage } from '../features/admin/applications-page'
+import { AdminApplicationReviewPage } from '../features/admin/application-review-page'
 import { CustomerChatPage } from '../features/customer/chat-page'
 import { CustomerQuotationsPage, CustomerQuotationPage } from '../features/customer/quotation-page'
 import { CustomerPaymentPage } from '../features/customer/payment-page'
@@ -43,7 +46,12 @@ export const routes: RouteObject[] = [{
       { path: '/apply/staff', element: <StaffApplicationPage /> },
     ] },
     { element: <RoleGuard role="admin" />, children: [{ path: '/admin', element: <AppShell />, children: [
-      { index: true, element: <AdminDashboardPage /> }, { path: '*', element: <SystemPage kind="not-found" /> },
+      { index: true, element: <AdminDashboardPage /> },
+      { path: 'users', element: <AdminUsersPage /> },
+      { path: 'users/:userId', element: <AdminUsersPage /> },
+      { path: 'applications', element: <AdminApplicationsPage /> },
+      { path: 'applications/:applicationId', element: <AdminApplicationReviewPage /> },
+      { path: '*', element: <SystemPage kind="not-found" /> },
     ] }] },
     { element: <RoleGuard role="customer" />, children: [{ path: '/customer', element: <AppShell />, children: [
       { index: true, element: <CustomerDashboardPage /> },
