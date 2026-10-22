@@ -1,0 +1,23 @@
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { applicationServices } from '../../services/application-services'
+import { applicationDecisionSchema, adminRoleLabels } from '../../types/admin'
+import type { AdminApplication, ApplicationDecisionInput } from '../../types/admin'
+import { ErrorState } from '../../components/ui/page-states'
+import { AdminDialog } from './admin-components'
+
+export function ApplicationDecisionDialog({ application, decision, note, onClose, onSaved }: { application: AdminApplication; decision: 'Approved' | 'Rejected'; note: string; onClose: () => void; onSaved: (application: AdminApplication) => void }) {
+  const [error, setError] = useState('')
+  const form = useForm<ApplicationDecisionInput>({ resolver: zodResolver(applicationDecisionSchema), defaultValues: { applicationId: application.id, expectedRevision: application.staff?.revision ?? 0, decision, reason: '', applicantMessage: '', note } })
+  const approval = decision === 'Approved'; const busy = form.formState.isSubmitting
+  const submit = form.handleSubmit(async (values) => {
+    setError('')
+    try { const result = await applicationServices.decideStaffApplication(values); if (result.ok) onSaved(result.data); else setError(result.error) }
+    catch { setError('Unable to save this decision. Please try again.') }
+  })
+  return <AdminDialog title={approval ? 'Approve and create account' : 'Reject application'} description={`${application.name} · ${application.id}`} onClose={onClose} busy={busy}><form noValidate onSubmit={submit}><div className="admin-dialog-body">{error && <ErrorState message={error} />}
+    {approval ? <><p className="admin-notice">Only document metadata is available. Identity, email and licence verification services are not connected.</p><div className="admin-facts"><label className="admin-form-field">Work email<input className="coord-input" value={application.email} readOnly /></label><label className="admin-form-field">Account ID<input className="coord-input" value="Generated on approval" readOnly /></label></div><label className="admin-form-field">Role<select className="coord-input" value={application.role} disabled><option value={application.role}>{adminRoleLabels[application.role]}</option></select></label><label className="admin-form-field">Depot<select className="coord-input" disabled><option>Not configured</option></select></label><fieldset className="admin-role-options"><legend className="mb-2">How should they set up sign-in?</legend><label><input type="radio" name="setup" disabled />Email a setup link</label><label><input type="radio" name="setup" disabled />Create a temporary password</label></fieldset><p className="coord-helper">Account setup is not connected. No setup link, password or welcome email will be sent.</p></> : <><label className="admin-form-field">Reason<select className="coord-input" {...form.register('reason')} aria-invalid={!!form.formState.errors.reason} aria-describedby={form.formState.errors.reason ? 'application-reason-error' : undefined}><option value="">Select a reason</option><option>Documents incomplete or unclear</option><option>Other</option></select>{form.formState.errors.reason && <span role="alert" id="application-reason-error" className="coord-field-error">{form.formState.errors.reason.message}</span>}</label><label className="admin-form-field">Message to applicant<textarea className="coord-input" rows={3} maxLength={2000} {...form.register('applicantMessage')} aria-invalid={!!form.formState.errors.applicantMessage} aria-describedby="application-message-hint" /><small id="application-message-hint">Saved with the decision. Email delivery is not connected.</small>{form.formState.errors.applicantMessage && <span role="alert" className="coord-field-error">{form.formState.errors.applicantMessage.message}</span>}</label><label><input type="checkbox" disabled title="Reapplication policy is awaiting approval" /> Allow this person to apply again</label><p className="coord-helper">No account will be created. The decision is recorded in the audit log.</p></>}
+    {form.formState.errors.note && <p role="alert" className="coord-field-error">{form.formState.errors.note.message}</p>}
+    </div><div className="admin-dialog-footer"><button type="button" className="coord-button secondary" disabled={busy} onClick={onClose}>Cancel</button><button type="submit" className={`coord-button ${approval ? '' : 'danger'}`} disabled={busy}>{busy ? 'Saving…' : approval ? 'Approve & create account' : 'Reject application'}</button></div></form></AdminDialog>
+}

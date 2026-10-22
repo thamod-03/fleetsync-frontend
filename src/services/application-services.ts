@@ -26,6 +26,11 @@ export const subscribeApplication = (listener: () => void) => {
 }
 
 export const applicationServices: ApplicationServices = {
+  getAdminWorkspace: async () => { await initialization; return adapter.services.getAdminWorkspace() },
+  getAdminUser: async (input) => { await initialization; return adapter.services.getAdminUser(input) },
+  getAdminApplication: async (input) => { await initialization; return adapter.services.getAdminApplication(input) },
+  saveApplicationNote: async (input) => { await initialization; return adapter.services.saveApplicationNote(input) },
+  decideStaffApplication: async (input) => { await initialization; return adapter.services.decideStaffApplication(input) },
   getNotifications: async () => { await initialization; return adapter.services.getNotifications() },
   markAllNotificationsRead: async () => { await initialization; return adapter.services.markAllNotificationsRead() },
   getPaymentTestCards: async () => { await initialization; return adapter.services.getPaymentTestCards() },
